@@ -1,1 +1,50 @@
-[]
+[
+  {
+    "id": "charades",
+    "label": "Charades",
+    "description": "Act it out, no words allowed",
+    "dataFile": "charades.json",
+    "enabled": true,
+    "type": "minigame"
+  },
+  {
+    "id": "trivia",
+    "label": "Trivia",
+    "description": "Multiple-choice knowledge gauntlet",
+    "dataFile": "trivia.json",
+    "enabled": true,
+    "type": "minigame"
+  },
+  {
+    "id": "scategories",
+    "label": "Scategories",
+    "description": "Think fast, defend harder",
+    "dataFile": "scategories.json",
+    "enabled": true,
+    "type": "minigame"
+  },
+  {
+    "id": "fifty-fifty",
+    "label": "Fifty Fifty",
+    "description": "Vegas slots of chaos — penalty or bonus",
+    "dataFile": "fifty-fifty.json",
+    "enabled": true,
+    "type": "minigame"
+  },
+  {
+    "id": "world-events",
+    "label": "World Events",
+    "description": "Random global chaos between minigames",
+    "dataFile": "world-events.json",
+    "enabled": true,
+    "type": "event"
+  },
+  {
+    "id": "fun-facts",
+    "label": "Fun Fact Interjection",
+    "description": "Bizarre facts, ridiculous statements, and Escher sentences between rounds",
+    "dataFile": "fun-facts.json",
+    "enabled": true,
+    "type": "event"
+  }
+]

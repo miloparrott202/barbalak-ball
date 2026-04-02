@@ -1,1 +1,2402 @@
-[]
+[
+  {
+    "id": "te-e1",
+    "difficulty": "easy",
+    "question": "What planet is closest to the Sun?",
+    "options": [
+      "Venus",
+      "Mars",
+      "Mercury",
+      "Earth"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "te-e2",
+    "difficulty": "easy",
+    "question": "How many continents are there?",
+    "options": [
+      "7",
+      "5",
+      "6",
+      "8"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "te-e3",
+    "difficulty": "easy",
+    "question": "What is the boiling point of water in Fahrenheit?",
+    "options": [
+      "200",
+      "220",
+      "212",
+      "100"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "te-e4",
+    "difficulty": "easy",
+    "question": "What gas do humans need to breathe?",
+    "options": [
+      "Nitrogen",
+      "Oxygen",
+      "Helium",
+      "Carbon dioxide"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "te-e5",
+    "difficulty": "easy",
+    "question": "How many sides does a hexagon have?",
+    "options": [
+      "8",
+      "5",
+      "7",
+      "6"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "te-e6",
+    "difficulty": "easy",
+    "question": "What is the largest ocean on Earth?",
+    "options": [
+      "Atlantic",
+      "Pacific",
+      "Indian",
+      "Arctic"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "te-e7",
+    "difficulty": "easy",
+    "question": "What color do you get mixing red and white?",
+    "options": [
+      "Pink",
+      "Orange",
+      "Salmon",
+      "Peach"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "te-e8",
+    "difficulty": "easy",
+    "question": "Which state of matter has a fixed shape?",
+    "options": [
+      "Liquid",
+      "Gas",
+      "Plasma",
+      "Solid"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "te-e9",
+    "difficulty": "easy",
+    "question": "What is 7 × 8?",
+    "options": [
+      "58",
+      "56",
+      "54",
+      "64"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "te-e10",
+    "difficulty": "easy",
+    "question": "How many bones does an adult human have?",
+    "options": [
+      "256",
+      "186",
+      "206",
+      "212"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "te-e11",
+    "difficulty": "easy",
+    "question": "What is the capital of the United States?",
+    "options": [
+      "Philadelphia",
+      "Washington D.C.",
+      "New York",
+      "Los Angeles"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "te-e12",
+    "difficulty": "easy",
+    "question": "Which land animal is the tallest?",
+    "options": [
+      "Elephant",
+      "Moose",
+      "Horse",
+      "Giraffe"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "te-e13",
+    "difficulty": "easy",
+    "question": "What do caterpillars turn into?",
+    "options": [
+      "Beetles",
+      "Butterflies or moths",
+      "Dragonflies",
+      "Moths only"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "te-e14",
+    "difficulty": "easy",
+    "question": "What is the freezing point of water in Celsius?",
+    "options": [
+      "0",
+      "10",
+      "-10",
+      "32"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "te-e15",
+    "difficulty": "easy",
+    "question": "How many vowels are in the English alphabet?",
+    "options": [
+      "6",
+      "4",
+      "5",
+      "7"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "te-m1",
+    "difficulty": "medium",
+    "question": "What is the powerhouse of the cell?",
+    "options": [
+      "Ribosome",
+      "Mitochondria",
+      "Golgi apparatus",
+      "Nucleus"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "te-m2",
+    "difficulty": "medium",
+    "question": "What year did Columbus sail to the Americas?",
+    "options": [
+      "1502",
+      "1492",
+      "1482",
+      "1512"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "te-m3",
+    "difficulty": "medium",
+    "question": "What type of rock forms from cooled lava?",
+    "options": [
+      "Sedimentary",
+      "Igneous",
+      "Mineral",
+      "Metamorphic"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "te-m4",
+    "difficulty": "medium",
+    "question": "How many chambers does the human heart have?",
+    "options": [
+      "4",
+      "2",
+      "3",
+      "5"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "te-m5",
+    "difficulty": "medium",
+    "question": "What is the chemical symbol for gold?",
+    "options": [
+      "Ag",
+      "Au",
+      "Go",
+      "Gd"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "te-m6",
+    "difficulty": "medium",
+    "question": "What is the longest river in the world?",
+    "options": [
+      "Mississippi",
+      "Yangtze",
+      "Nile",
+      "Amazon"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "te-m7",
+    "difficulty": "medium",
+    "question": "What instrument measures earthquakes?",
+    "options": [
+      "Barometer",
+      "Spectrometer",
+      "Seismograph",
+      "Thermometer"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "te-m8",
+    "difficulty": "medium",
+    "question": "Who wrote Romeo and Juliet?",
+    "options": [
+      "Austen",
+      "Shakespeare",
+      "Dickens",
+      "Twain"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "te-m9",
+    "difficulty": "medium",
+    "question": "What is the smallest prime number?",
+    "options": [
+      "3",
+      "1",
+      "0",
+      "2"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "te-m10",
+    "difficulty": "medium",
+    "question": "Which planet has the most moons (as of 2024)?",
+    "options": [
+      "Neptune",
+      "Saturn",
+      "Uranus",
+      "Jupiter"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "te-m11",
+    "difficulty": "medium",
+    "question": "What does DNA stand for?",
+    "options": [
+      "Dual nitrogen acid",
+      "Deoxyribonucleic acid",
+      "Dynamic nuclear atom",
+      "Dioxin nucleic acid"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "te-m12",
+    "difficulty": "medium",
+    "question": "What is the hardest natural substance on Earth?",
+    "options": [
+      "Diamond",
+      "Titanium",
+      "Graphene",
+      "Quartz"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "te-m13",
+    "difficulty": "medium",
+    "question": "The angles of a triangle always add up to how many degrees?",
+    "options": [
+      "360",
+      "270",
+      "90",
+      "180"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "te-m14",
+    "difficulty": "medium",
+    "question": "What is the largest organ of the human body?",
+    "options": [
+      "Liver",
+      "Skin",
+      "Brain",
+      "Lungs"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "te-m15",
+    "difficulty": "medium",
+    "question": "Approximately how fast is the speed of light in miles per second?",
+    "options": [
+      "86,000",
+      "246,000",
+      "186,000",
+      "126,000"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "te-h1",
+    "difficulty": "hard",
+    "question": "What is Euler's number (e) to two decimal places?",
+    "options": [
+      "3.14",
+      "1.62",
+      "2.72",
+      "2.14"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "te-h2",
+    "difficulty": "hard",
+    "question": "Which is the smallest bone in the human body?",
+    "options": [
+      "Phalanx",
+      "Stapes",
+      "Malleus",
+      "Incus"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "te-h3",
+    "difficulty": "hard",
+    "question": "In what year was the Magna Carta signed?",
+    "options": [
+      "1776",
+      "1215",
+      "1066",
+      "1415"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "te-h4",
+    "difficulty": "hard",
+    "question": "What is the chemical formula for sulfuric acid?",
+    "options": [
+      "H2SO4",
+      "HSO4",
+      "H2S2O4",
+      "H2SO3"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "te-h5",
+    "difficulty": "hard",
+    "question": "How many elements are in the periodic table as of 2024?",
+    "options": [
+      "114",
+      "120",
+      "112",
+      "118"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "te-h6",
+    "difficulty": "hard",
+    "question": "What is the tallest type of grass?",
+    "options": [
+      "Bamboo",
+      "Sugarcane",
+      "Pampas grass",
+      "Corn"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "te-h7",
+    "difficulty": "hard",
+    "question": "Who was the first woman to win a Nobel Prize?",
+    "options": [
+      "Ada Lovelace",
+      "Dorothy Hodgkin",
+      "Rosalind Franklin",
+      "Marie Curie"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "te-h8",
+    "difficulty": "hard",
+    "question": "Mitochondrial DNA is inherited from which parent?",
+    "options": [
+      "Mother",
+      "Father",
+      "Both equally",
+      "Random"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "te-h9",
+    "difficulty": "hard",
+    "question": "Which amendment abolished slavery in the US?",
+    "options": [
+      "14th",
+      "12th",
+      "15th",
+      "13th"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "te-h10",
+    "difficulty": "hard",
+    "question": "What is the longest bone in the human body?",
+    "options": [
+      "Humerus",
+      "Femur",
+      "Tibia",
+      "Fibula"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "te-h11",
+    "difficulty": "hard",
+    "question": "What defines an isosceles triangle?",
+    "options": [
+      "No sides equal",
+      "One right angle",
+      "Two sides equal",
+      "All sides equal"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "te-h12",
+    "difficulty": "hard",
+    "question": "What is the pH of pure water?",
+    "options": [
+      "8",
+      "6",
+      "5",
+      "7"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "te-h13",
+    "difficulty": "hard",
+    "question": "What element has atomic number 79?",
+    "options": [
+      "Gold",
+      "Silver",
+      "Mercury",
+      "Platinum"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "te-h14",
+    "difficulty": "hard",
+    "question": "How many syllables are in 'onomatopoeia'?",
+    "options": [
+      "5",
+      "7",
+      "6",
+      "8"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "te-h15",
+    "difficulty": "hard",
+    "question": "What process converts CO2 and sunlight into glucose in plants?",
+    "options": [
+      "Chemosynthesis",
+      "Photosynthesis",
+      "Fermentation",
+      "Respiration"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "te-r1",
+    "difficulty": "ruinous",
+    "question": "What is the only letter that does not appear in any US state name?",
+    "options": [
+      "X",
+      "Q",
+      "Z",
+      "J"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "te-r2",
+    "difficulty": "ruinous",
+    "question": "How many times does the average human heart beat in a lifetime?",
+    "options": [
+      "~1 billion",
+      "~5 billion",
+      "~3 billion",
+      "~2.5 billion"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "te-r3",
+    "difficulty": "ruinous",
+    "question": "What temperature is identical in both Fahrenheit and Celsius?",
+    "options": [
+      "-40",
+      "-60",
+      "0",
+      "-20"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "te-r4",
+    "difficulty": "ruinous",
+    "question": "What percentage of the Earth's water is fresh water?",
+    "options": [
+      "10%",
+      "25%",
+      "3%",
+      "50%"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "te-r5",
+    "difficulty": "ruinous",
+    "question": "Roughly how many muscles does a caterpillar have?",
+    "options": [
+      "248",
+      "1,028",
+      "About 4,000",
+      "650"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "ta-e1",
+    "difficulty": "easy",
+    "question": "What amendment to the Constitution guarantees freedom of speech?",
+    "options": [
+      "2nd",
+      "1st",
+      "4th",
+      "5th"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "ta-e2",
+    "difficulty": "easy",
+    "question": "What is the legal drinking age in the United States?",
+    "options": [
+      "18",
+      "19",
+      "21",
+      "20"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "ta-e3",
+    "difficulty": "easy",
+    "question": "How many stripes are on the American flag?",
+    "options": [
+      "15",
+      "13",
+      "11",
+      "7"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "ta-e4",
+    "difficulty": "easy",
+    "question": "What does IPA stand for in beer?",
+    "options": [
+      "Imperial Porter Ale",
+      "Iced Pilsner Ale",
+      "International Pale Ale",
+      "India Pale Ale"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "ta-e5",
+    "difficulty": "easy",
+    "question": "What tailgate game uses bean bags tossed at angled boards with holes?",
+    "options": [
+      "Flip cup",
+      "Beer die",
+      "Cornhole",
+      "Horseshoes"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "ta-e6",
+    "difficulty": "easy",
+    "question": "What US holiday is celebrated on the 4th Thursday of November?",
+    "options": [
+      "Thanksgiving",
+      "Memorial Day",
+      "Labor Day",
+      "Veterans Day"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "ta-e7",
+    "difficulty": "easy",
+    "question": "Which president is on the one-dollar bill?",
+    "options": [
+      "Jefferson",
+      "Washington",
+      "Lincoln",
+      "Franklin"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "ta-e8",
+    "difficulty": "easy",
+    "question": "What is the most-sold beer brand in America by volume?",
+    "options": [
+      "Budweiser",
+      "Miller Lite",
+      "Coors Light",
+      "Bud Light"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "ta-e9",
+    "difficulty": "easy",
+    "question": "What drinking game involves bouncing a ping pong ball into cups of beer?",
+    "options": [
+      "Kings",
+      "Beer pong",
+      "Quarters",
+      "Flip cup"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "ta-e10",
+    "difficulty": "easy",
+    "question": "What is the US national anthem called?",
+    "options": [
+      "America the Beautiful",
+      "God Bless America",
+      "My Country 'Tis of Thee",
+      "The Star-Spangled Banner"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "ta-e11",
+    "difficulty": "easy",
+    "question": "What animal is on the Fireball whiskey label?",
+    "options": [
+      "Dragon",
+      "Devil",
+      "Phoenix",
+      "Bull"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "ta-e12",
+    "difficulty": "easy",
+    "question": "What city is known as 'The Big Apple'?",
+    "options": [
+      "Boston",
+      "New York",
+      "Chicago",
+      "Los Angeles"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "ta-e13",
+    "difficulty": "easy",
+    "question": "What cocktail combines vodka, coffee liqueur, and cream?",
+    "options": [
+      "Black Russian",
+      "Mudslide",
+      "White Russian",
+      "Espresso Martini"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "ta-e14",
+    "difficulty": "easy",
+    "question": "In what state is Hollywood located?",
+    "options": [
+      "Nevada",
+      "California",
+      "Florida",
+      "New York"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "ta-e15",
+    "difficulty": "easy",
+    "question": "How many stars are on the American flag?",
+    "options": [
+      "52",
+      "48",
+      "50",
+      "51"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "ta-m1",
+    "difficulty": "medium",
+    "question": "What was the name of the CIA's LSD mind-control program?",
+    "options": [
+      "MK-Ultra",
+      "Operation Paperclip",
+      "MK-Alpha",
+      "Project Monarch"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "ta-m2",
+    "difficulty": "medium",
+    "question": "What year was Prohibition enacted in the US?",
+    "options": [
+      "1925",
+      "1910",
+      "1920",
+      "1915"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "ta-m3",
+    "difficulty": "medium",
+    "question": "Which US president served the shortest term?",
+    "options": [
+      "James Garfield",
+      "Warren Harding",
+      "William Henry Harrison",
+      "Zachary Taylor"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "ta-m4",
+    "difficulty": "medium",
+    "question": "What was the last state admitted to the United States?",
+    "options": [
+      "New Mexico",
+      "Hawaii",
+      "Arizona",
+      "Alaska"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "ta-m5",
+    "difficulty": "medium",
+    "question": "What US city was devastated by Hurricane Katrina in 2005?",
+    "options": [
+      "New Orleans",
+      "Tampa",
+      "Houston",
+      "Miami"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "ta-m6",
+    "difficulty": "medium",
+    "question": "What amendment gives Americans the right to bear arms?",
+    "options": [
+      "5th",
+      "1st",
+      "4th",
+      "2nd"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "ta-m7",
+    "difficulty": "medium",
+    "question": "How many shots are in a standard handle (1.75L) of liquor?",
+    "options": [
+      "30",
+      "40",
+      "20",
+      "50"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "ta-m8",
+    "difficulty": "medium",
+    "question": "What chemical defoliant was used extensively by the US in Vietnam?",
+    "options": [
+      "Mustard gas",
+      "Sarin",
+      "Agent Orange",
+      "Napalm"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "ta-m9",
+    "difficulty": "medium",
+    "question": "What did the US government test on Bikini Atoll?",
+    "options": [
+      "Chemical agents",
+      "Bioweapons",
+      "Sonar systems",
+      "Nuclear bombs"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "ta-m10",
+    "difficulty": "medium",
+    "question": "What is the proof of Everclear at its strongest legal form?",
+    "options": [
+      "151",
+      "200",
+      "190",
+      "180"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "ta-m11",
+    "difficulty": "medium",
+    "question": "In what year did the US invade Iraq the second time?",
+    "options": [
+      "2005",
+      "2001",
+      "2003",
+      "2007"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "ta-m12",
+    "difficulty": "medium",
+    "question": "What brand produces Jägermeister?",
+    "options": [
+      "Pernod Ricard",
+      "Mast-Jägermeister",
+      "Diageo",
+      "Bacardi"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "ta-m13",
+    "difficulty": "medium",
+    "question": "What year did the 18th Amendment (Prohibition) get repealed?",
+    "options": [
+      "1929",
+      "1935",
+      "1933",
+      "1940"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "ta-m14",
+    "difficulty": "medium",
+    "question": "What is the highest-grossing domestic US film of all time?",
+    "options": [
+      "Star Wars: The Force Awakens",
+      "Titanic",
+      "Avengers: Endgame",
+      "Avatar"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "ta-m15",
+    "difficulty": "medium",
+    "question": "What was the code name for the D-Day invasion of Normandy?",
+    "options": [
+      "Operation Overlord",
+      "Operation Market Garden",
+      "Operation Torch",
+      "Operation Barbarossa"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "ta-h1",
+    "difficulty": "hard",
+    "question": "What was Operation Northwoods?",
+    "options": [
+      "NSA surveillance expansion",
+      "DoD plan for false-flag attacks on US soil to justify invading Cuba",
+      "FBI plot to discredit MLK",
+      "CIA plan to assassinate Castro"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "ta-h2",
+    "difficulty": "hard",
+    "question": "How many US states have legalized recreational marijuana as of 2024?",
+    "options": [
+      "18",
+      "30",
+      "24",
+      "14"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "ta-h3",
+    "difficulty": "hard",
+    "question": "What was the Tuskegee Experiment?",
+    "options": [
+      "A chemical weapons test on soldiers",
+      "A 40-year study leaving Black men with syphilis untreated",
+      "A nuclear test",
+      "A CIA interrogation program"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "ta-h4",
+    "difficulty": "hard",
+    "question": "What percentage of the world's prisoners are held in the US?",
+    "options": [
+      "5%",
+      "15%",
+      "10%",
+      "20%"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "ta-h5",
+    "difficulty": "hard",
+    "question": "What did Four Loko originally contain alongside alcohol?",
+    "options": [
+      "Caffeine, taurine, and guarana",
+      "Taurine and guarana",
+      "Ephedra and caffeine",
+      "Caffeine and taurine"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "ta-h6",
+    "difficulty": "hard",
+    "question": "What year did the CIA officially acknowledge Area 51 exists?",
+    "options": [
+      "1997",
+      "They still haven't",
+      "2013",
+      "2003"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "ta-h7",
+    "difficulty": "hard",
+    "question": "What US operation brought Nazi scientists to America after WWII?",
+    "options": [
+      "Operation Condor",
+      "Operation Paperclip",
+      "Operation Mockingbird",
+      "Operation Crossroads"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "ta-h8",
+    "difficulty": "hard",
+    "question": "Who said 'I am become death, the destroyer of worlds'?",
+    "options": [
+      "Fermi",
+      "Truman",
+      "Einstein",
+      "Oppenheimer"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "ta-h9",
+    "difficulty": "hard",
+    "question": "What was the Iran-Contra affair?",
+    "options": [
+      "Oil embargoes",
+      "Nuclear espionage",
+      "Illegally selling weapons to Iran to fund Nicaraguan rebels",
+      "CIA drug trafficking"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "ta-h10",
+    "difficulty": "hard",
+    "question": "What was COINTELPRO?",
+    "options": [
+      "FBI program to surveil and disrupt political organizations",
+      "NSA encryption project",
+      "DEA counter-narcotics task force",
+      "CIA drone program"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "ta-h11",
+    "difficulty": "hard",
+    "question": "What percentage of American adults binge drink at least once a month?",
+    "options": [
+      "35%",
+      "10%",
+      "26%",
+      "17%"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "ta-h12",
+    "difficulty": "hard",
+    "question": "What US city has the most bars per capita?",
+    "options": [
+      "Milwaukee",
+      "New Orleans",
+      "San Francisco",
+      "Las Vegas"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "ta-h13",
+    "difficulty": "hard",
+    "question": "How many times has the US formally declared war through Congress since 1942?",
+    "options": [
+      "1",
+      "5",
+      "0",
+      "11"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "ta-h14",
+    "difficulty": "hard",
+    "question": "Which country has the US NOT bombed since 1945?",
+    "options": [
+      "Laos",
+      "Switzerland",
+      "Cambodia",
+      "Grenada"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "ta-h15",
+    "difficulty": "hard",
+    "question": "What is the ABV of a standard US light beer?",
+    "options": [
+      "5.0%",
+      "2.5%",
+      "3.2%",
+      "4.2%"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "ta-r1",
+    "difficulty": "ruinous",
+    "question": "The CIA attempted to assassinate Fidel Castro using which methods?",
+    "options": [
+      "A poisoned cigar",
+      "An exploding seashell",
+      "A femme fatale",
+      "All of the above"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "ta-r2",
+    "difficulty": "ruinous",
+    "question": "How many gallons of beer does the average American drink per year?",
+    "options": [
+      "34",
+      "28",
+      "15",
+      "23"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "ta-r3",
+    "difficulty": "ruinous",
+    "question": "What is the longest US government shutdown in history (in days)?",
+    "options": [
+      "35",
+      "21",
+      "42",
+      "16"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "ta-r4",
+    "difficulty": "ruinous",
+    "question": "In 1932, Australia fought and lost a literal war against what animal?",
+    "options": [
+      "Wombats",
+      "Kangaroos",
+      "Emus",
+      "Cassowaries"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "ta-r5",
+    "difficulty": "ruinous",
+    "question": "What is the only country to have been nuked in warfare?",
+    "options": [
+      "Germany",
+      "Japan",
+      "Korea",
+      "Vietnam"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tw-e1",
+    "difficulty": "easy",
+    "question": "What country currently has the largest population?",
+    "options": [
+      "China",
+      "India",
+      "USA",
+      "Indonesia"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tw-e2",
+    "difficulty": "easy",
+    "question": "What is the capital of France?",
+    "options": [
+      "Lyon",
+      "Marseille",
+      "Nice",
+      "Paris"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tw-e3",
+    "difficulty": "easy",
+    "question": "What is the tallest mountain in the world?",
+    "options": [
+      "Mount Everest",
+      "K2",
+      "Denali",
+      "Kangchenjunga"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tw-e4",
+    "difficulty": "easy",
+    "question": "What country is shaped like a boot?",
+    "options": [
+      "Greece",
+      "Spain",
+      "Italy",
+      "Portugal"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tw-e5",
+    "difficulty": "easy",
+    "question": "What is the most widely spoken first language in the world?",
+    "options": [
+      "English",
+      "Hindi",
+      "Spanish",
+      "Mandarin Chinese"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tw-e6",
+    "difficulty": "easy",
+    "question": "On which continent is Egypt?",
+    "options": [
+      "Africa",
+      "Asia",
+      "Europe",
+      "South America"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tw-e7",
+    "difficulty": "easy",
+    "question": "What is the currency of Japan?",
+    "options": [
+      "Won",
+      "Yuan",
+      "Baht",
+      "Yen"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tw-e8",
+    "difficulty": "easy",
+    "question": "What is the largest desert in the world?",
+    "options": [
+      "Sahara",
+      "Gobi",
+      "Antarctic Desert",
+      "Arabian"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tw-e9",
+    "difficulty": "easy",
+    "question": "Which country is home to the Great Barrier Reef?",
+    "options": [
+      "Philippines",
+      "Australia",
+      "New Zealand",
+      "Indonesia"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tw-e10",
+    "difficulty": "easy",
+    "question": "Which country invented pizza?",
+    "options": [
+      "France",
+      "Greece",
+      "Spain",
+      "Italy"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tw-e11",
+    "difficulty": "easy",
+    "question": "What is the smallest country in the world by area?",
+    "options": [
+      "Vatican City",
+      "Monaco",
+      "San Marino",
+      "Liechtenstein"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tw-e12",
+    "difficulty": "easy",
+    "question": "What language is most widely spoken in Brazil?",
+    "options": [
+      "Spanish",
+      "English",
+      "Portuguese",
+      "French"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tw-e13",
+    "difficulty": "easy",
+    "question": "What river runs through Egypt?",
+    "options": [
+      "Tigris",
+      "Nile",
+      "Euphrates",
+      "Congo"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tw-e14",
+    "difficulty": "easy",
+    "question": "How many time zones does Russia span?",
+    "options": [
+      "7",
+      "9",
+      "13",
+      "11"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tw-e15",
+    "difficulty": "easy",
+    "question": "What city hosted the 2020 Summer Olympics (held in 2021)?",
+    "options": [
+      "Beijing",
+      "London",
+      "Tokyo",
+      "Paris"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tw-m1",
+    "difficulty": "medium",
+    "question": "What is the most visited country in the world by tourists?",
+    "options": [
+      "Spain",
+      "USA",
+      "France",
+      "Italy"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tw-m2",
+    "difficulty": "medium",
+    "question": "What is the longest wall ever built?",
+    "options": [
+      "Great Wall of China",
+      "Hadrian's Wall",
+      "Berlin Wall",
+      "Western Wall"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tw-m3",
+    "difficulty": "medium",
+    "question": "Which country has the most UNESCO World Heritage Sites?",
+    "options": [
+      "China",
+      "Spain",
+      "Italy",
+      "France"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tw-m4",
+    "difficulty": "medium",
+    "question": "What strait separates Europe from Africa?",
+    "options": [
+      "Bosporus",
+      "Strait of Malacca",
+      "Strait of Hormuz",
+      "Strait of Gibraltar"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tw-m5",
+    "difficulty": "medium",
+    "question": "What is the national flower of Japan?",
+    "options": [
+      "Cherry blossom",
+      "Rose",
+      "Lotus",
+      "Chrysanthemum"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tw-m6",
+    "difficulty": "medium",
+    "question": "Which country has the most islands in the world?",
+    "options": [
+      "Indonesia",
+      "Philippines",
+      "Sweden",
+      "Finland"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tw-m7",
+    "difficulty": "medium",
+    "question": "What is the official language of Iran?",
+    "options": [
+      "Arabic",
+      "Turkish",
+      "Urdu",
+      "Farsi (Persian)"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tw-m8",
+    "difficulty": "medium",
+    "question": "In which country would you find Machu Picchu?",
+    "options": [
+      "Bolivia",
+      "Peru",
+      "Ecuador",
+      "Colombia"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tw-m9",
+    "difficulty": "medium",
+    "question": "Which African country was never colonized by a European power?",
+    "options": [
+      "Nigeria",
+      "Ghana",
+      "Kenya",
+      "Ethiopia"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tw-m10",
+    "difficulty": "medium",
+    "question": "What sea is bordered by Europe, Africa, and Asia?",
+    "options": [
+      "Black Sea",
+      "Mediterranean Sea",
+      "Red Sea",
+      "Caspian Sea"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tw-m11",
+    "difficulty": "medium",
+    "question": "Which country consumes the most alcohol per capita?",
+    "options": [
+      "Belarus",
+      "Russia",
+      "Ireland",
+      "Czech Republic"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tw-m12",
+    "difficulty": "medium",
+    "question": "What is the currency of the United Kingdom?",
+    "options": [
+      "Euro",
+      "Dollar",
+      "Pound sterling",
+      "Franc"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tw-m13",
+    "difficulty": "medium",
+    "question": "What is the most widely practiced religion in the world?",
+    "options": [
+      "Islam",
+      "Christianity",
+      "Hinduism",
+      "Buddhism"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tw-m14",
+    "difficulty": "medium",
+    "question": "In which country is Angkor Wat?",
+    "options": [
+      "Thailand",
+      "Vietnam",
+      "Cambodia",
+      "Laos"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tw-m15",
+    "difficulty": "medium",
+    "question": "What is the driest inhabited continent?",
+    "options": [
+      "Australia",
+      "Africa",
+      "Asia",
+      "South America"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tw-h1",
+    "difficulty": "hard",
+    "question": "What is the most spoken language in Africa by total speakers?",
+    "options": [
+      "Swahili",
+      "French",
+      "Arabic",
+      "Hausa"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tw-h2",
+    "difficulty": "hard",
+    "question": "Which empire built Petra in modern-day Jordan?",
+    "options": [
+      "Roman",
+      "Ottoman",
+      "Persian",
+      "Nabataean"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tw-h3",
+    "difficulty": "hard",
+    "question": "What is the only country that borders both France and Portugal?",
+    "options": [
+      "Spain",
+      "Andorra",
+      "Morocco",
+      "Italy"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tw-h4",
+    "difficulty": "hard",
+    "question": "What is the highest waterfall in the world?",
+    "options": [
+      "Victoria Falls",
+      "Niagara Falls",
+      "Iguazu Falls",
+      "Angel Falls"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tw-h5",
+    "difficulty": "hard",
+    "question": "How many official languages does South Africa have?",
+    "options": [
+      "5",
+      "9",
+      "11",
+      "2"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tw-h6",
+    "difficulty": "hard",
+    "question": "What is the capital of Myanmar?",
+    "options": [
+      "Yangon",
+      "Naypyidaw",
+      "Mandalay",
+      "Bago"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tw-h7",
+    "difficulty": "hard",
+    "question": "Which country has the most active volcanoes?",
+    "options": [
+      "Japan",
+      "Chile",
+      "Iceland",
+      "Indonesia"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tw-h8",
+    "difficulty": "hard",
+    "question": "What ancient civilization built Tenochtitlan?",
+    "options": [
+      "Aztec",
+      "Maya",
+      "Olmec",
+      "Inca"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tw-h9",
+    "difficulty": "hard",
+    "question": "Which country's flag features a dragon?",
+    "options": [
+      "China",
+      "Mongolia",
+      "Nepal",
+      "Bhutan"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tw-h10",
+    "difficulty": "hard",
+    "question": "What is the only letter not found in any country's English name?",
+    "options": [
+      "W",
+      "Q",
+      "X",
+      "Z"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tw-h11",
+    "difficulty": "hard",
+    "question": "Where is the world's oldest continuously operating university?",
+    "options": [
+      "Italy (Bologna)",
+      "Morocco (al-Qarawiyyin)",
+      "England (Oxford)",
+      "Egypt (Al-Azhar)"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tw-h12",
+    "difficulty": "hard",
+    "question": "Which landlocked country is the largest in the world?",
+    "options": [
+      "Kazakhstan",
+      "Mongolia",
+      "Chad",
+      "Mali"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tw-h13",
+    "difficulty": "hard",
+    "question": "What modern country was formerly known as Persia?",
+    "options": [
+      "Iraq",
+      "Turkey",
+      "Iran",
+      "Afghanistan"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tw-h14",
+    "difficulty": "hard",
+    "question": "Which country has the longest coastline in the world?",
+    "options": [
+      "Australia",
+      "Canada",
+      "Russia",
+      "Indonesia"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tw-h15",
+    "difficulty": "hard",
+    "question": "What is the most densely populated country in the world?",
+    "options": [
+      "Singapore",
+      "Bangladesh",
+      "India",
+      "Monaco"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tw-r1",
+    "difficulty": "ruinous",
+    "question": "What country has more pyramids than Egypt?",
+    "options": [
+      "Mexico",
+      "Sudan",
+      "Peru",
+      "Iraq"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tw-r2",
+    "difficulty": "ruinous",
+    "question": "How many countries are in Africa?",
+    "options": [
+      "48",
+      "60",
+      "54",
+      "44"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tw-r3",
+    "difficulty": "ruinous",
+    "question": "What is the only national flag that is not rectangular?",
+    "options": [
+      "Bhutan",
+      "Switzerland",
+      "Vatican City",
+      "Nepal"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tw-r4",
+    "difficulty": "ruinous",
+    "question": "What country's name translates to 'Land of the Thunder Dragon'?",
+    "options": [
+      "Bhutan",
+      "Mongolia",
+      "Nepal",
+      "Laos"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tw-r5",
+    "difficulty": "ruinous",
+    "question": "What percentage of Earth's surface does the Pacific Ocean cover?",
+    "options": [
+      "25%",
+      "20%",
+      "30%",
+      "33%"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tg-e1",
+    "difficulty": "easy",
+    "question": "What force keeps us on the ground?",
+    "options": [
+      "Magnetism",
+      "Friction",
+      "Inertia",
+      "Gravity"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tg-e2",
+    "difficulty": "easy",
+    "question": "What is H2O?",
+    "options": [
+      "Water",
+      "Hydrogen peroxide",
+      "Helium oxide",
+      "Hydrochloric acid"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tg-e3",
+    "difficulty": "easy",
+    "question": "What is the center of an atom called?",
+    "options": [
+      "Electron",
+      "Proton",
+      "Neutron",
+      "Nucleus"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tg-e4",
+    "difficulty": "easy",
+    "question": "How many planets are in our solar system?",
+    "options": [
+      "7",
+      "9",
+      "10",
+      "8"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tg-e5",
+    "difficulty": "easy",
+    "question": "What organ pumps blood through the body?",
+    "options": [
+      "Heart",
+      "Lungs",
+      "Liver",
+      "Brain"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tg-e6",
+    "difficulty": "easy",
+    "question": "What is the speed of sound approximately in mph at sea level?",
+    "options": [
+      "500",
+      "1,000",
+      "767",
+      "343"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tg-e7",
+    "difficulty": "easy",
+    "question": "What gas makes up most of Earth's atmosphere?",
+    "options": [
+      "Oxygen",
+      "Nitrogen",
+      "Carbon dioxide",
+      "Hydrogen"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tg-e8",
+    "difficulty": "easy",
+    "question": "What planet is known as the Red Planet?",
+    "options": [
+      "Venus",
+      "Mars",
+      "Jupiter",
+      "Mercury"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tg-e9",
+    "difficulty": "easy",
+    "question": "What does a thermometer measure?",
+    "options": [
+      "Weight",
+      "Speed",
+      "Temperature",
+      "Humidity"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tg-e10",
+    "difficulty": "easy",
+    "question": "What is the closest star to Earth?",
+    "options": [
+      "The Sun",
+      "Polaris",
+      "Sirius",
+      "Alpha Centauri"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tg-e11",
+    "difficulty": "easy",
+    "question": "What kind of animal is a dolphin?",
+    "options": [
+      "Fish",
+      "Reptile",
+      "Mammal",
+      "Amphibian"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tg-e12",
+    "difficulty": "easy",
+    "question": "Which vitamin do you get from sunlight?",
+    "options": [
+      "Vitamin A",
+      "Vitamin D",
+      "Vitamin C",
+      "Vitamin B12"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tg-e13",
+    "difficulty": "easy",
+    "question": "What is the chemical symbol for oxygen?",
+    "options": [
+      "O",
+      "Ox",
+      "Om",
+      "Og"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tg-e14",
+    "difficulty": "easy",
+    "question": "How many legs does an arachnid have?",
+    "options": [
+      "6",
+      "10",
+      "12",
+      "8"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tg-e15",
+    "difficulty": "easy",
+    "question": "What part of the plant conducts photosynthesis?",
+    "options": [
+      "Roots",
+      "Leaves",
+      "Stem",
+      "Flowers"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tg-m1",
+    "difficulty": "medium",
+    "question": "What is the most abundant element in the universe?",
+    "options": [
+      "Oxygen",
+      "Carbon",
+      "Hydrogen",
+      "Helium"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tg-m2",
+    "difficulty": "medium",
+    "question": "What is the SI unit of electric current?",
+    "options": [
+      "Ampere",
+      "Volt",
+      "Watt",
+      "Ohm"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tg-m3",
+    "difficulty": "medium",
+    "question": "What does the Richter scale measure?",
+    "options": [
+      "Wind speed",
+      "Sound intensity",
+      "Temperature",
+      "Earthquake magnitude"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tg-m4",
+    "difficulty": "medium",
+    "question": "Who proposed the theory of general relativity?",
+    "options": [
+      "Newton",
+      "Einstein",
+      "Bohr",
+      "Hawking"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tg-m5",
+    "difficulty": "medium",
+    "question": "What is the main gas released during combustion?",
+    "options": [
+      "Carbon dioxide",
+      "Nitrogen",
+      "Oxygen",
+      "Methane"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tg-m6",
+    "difficulty": "medium",
+    "question": "How many chromosomes do humans have?",
+    "options": [
+      "23",
+      "44",
+      "46",
+      "48"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tg-m7",
+    "difficulty": "medium",
+    "question": "What is the study of fungi called?",
+    "options": [
+      "Botany",
+      "Virology",
+      "Entomology",
+      "Mycology"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tg-m8",
+    "difficulty": "medium",
+    "question": "What particle has a negative electric charge?",
+    "options": [
+      "Proton",
+      "Electron",
+      "Neutron",
+      "Photon"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tg-m9",
+    "difficulty": "medium",
+    "question": "What is absolute zero in Celsius?",
+    "options": [
+      "-273.15°C",
+      "-100°C",
+      "-460°C",
+      "0°C"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tg-m10",
+    "difficulty": "medium",
+    "question": "Which blood type is the universal donor?",
+    "options": [
+      "A+",
+      "AB+",
+      "B-",
+      "O-"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tg-m11",
+    "difficulty": "medium",
+    "question": "What is Newton's third law?",
+    "options": [
+      "F = ma",
+      "An object in motion stays in motion",
+      "Every action has an equal and opposite reaction",
+      "Energy cannot be created or destroyed"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tg-m12",
+    "difficulty": "medium",
+    "question": "What is the largest organ inside the human body (not skin)?",
+    "options": [
+      "Liver",
+      "Brain",
+      "Heart",
+      "Lungs"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tg-m13",
+    "difficulty": "medium",
+    "question": "What is the chemical formula for table salt?",
+    "options": [
+      "NaO",
+      "KCl",
+      "CaCl2",
+      "NaCl"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tg-m14",
+    "difficulty": "medium",
+    "question": "How long does it take light from the Sun to reach Earth?",
+    "options": [
+      "~1 minute",
+      "~30 seconds",
+      "~8 minutes",
+      "~20 minutes"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tg-m15",
+    "difficulty": "medium",
+    "question": "What type of bond involves the sharing of electrons?",
+    "options": [
+      "Covalent",
+      "Ionic",
+      "Metallic",
+      "Hydrogen"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tg-h1",
+    "difficulty": "hard",
+    "question": "What is Avogadro's number approximately?",
+    "options": [
+      "3.14 × 10⁸",
+      "6.02 × 10²³",
+      "1.38 × 10⁻²³",
+      "9.81 × 10¹"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tg-h2",
+    "difficulty": "hard",
+    "question": "What is the Heisenberg Uncertainty Principle about?",
+    "options": [
+      "Energy is always conserved",
+      "Light behaves as both a wave and particle",
+      "Mass and energy are equivalent",
+      "You can't know both position and momentum of a particle simultaneously"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tg-h3",
+    "difficulty": "hard",
+    "question": "What is the half-life of Carbon-14?",
+    "options": [
+      "~1,000 years",
+      "~12,000 years",
+      "~5,730 years",
+      "~50,000 years"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tg-h4",
+    "difficulty": "hard",
+    "question": "What is the name of the boundary between Earth's crust and mantle?",
+    "options": [
+      "Mohorovičić discontinuity",
+      "Lithosphere",
+      "Asthenosphere",
+      "Gutenberg discontinuity"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tg-h5",
+    "difficulty": "hard",
+    "question": "Who discovered penicillin?",
+    "options": [
+      "Louis Pasteur",
+      "Joseph Lister",
+      "Robert Koch",
+      "Alexander Fleming"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tg-h6",
+    "difficulty": "hard",
+    "question": "What is the powerhouse organelle of a eukaryotic cell?",
+    "options": [
+      "Chloroplast",
+      "Mitochondria",
+      "Ribosome",
+      "Endoplasmic reticulum"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tg-h7",
+    "difficulty": "hard",
+    "question": "What is the approximate age of the Earth?",
+    "options": [
+      "~2.5 billion years",
+      "~6.5 billion years",
+      "~4.5 billion years",
+      "~10 billion years"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tg-h8",
+    "difficulty": "hard",
+    "question": "What subatomic particle was discovered at CERN in 2012?",
+    "options": [
+      "Higgs boson",
+      "Graviton",
+      "Tachyon",
+      "Gluon"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tg-h9",
+    "difficulty": "hard",
+    "question": "What is the Krebs cycle involved in?",
+    "options": [
+      "DNA replication",
+      "Cellular respiration",
+      "Protein synthesis",
+      "Photosynthesis"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tg-h10",
+    "difficulty": "hard",
+    "question": "What law states that pressure and volume of a gas are inversely proportional?",
+    "options": [
+      "Charles's Law",
+      "Avogadro's Law",
+      "Boyle's Law",
+      "Dalton's Law"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tg-h11",
+    "difficulty": "hard",
+    "question": "What is the most electronegative element?",
+    "options": [
+      "Chlorine",
+      "Oxygen",
+      "Nitrogen",
+      "Fluorine"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tg-h12",
+    "difficulty": "hard",
+    "question": "What phenomenon causes the redshift of distant galaxies?",
+    "options": [
+      "Expansion of the universe",
+      "Gravity",
+      "Refraction",
+      "Dark matter"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "tg-h13",
+    "difficulty": "hard",
+    "question": "What is the derivative of e^x?",
+    "options": [
+      "x·e^(x-1)",
+      "ln(x)",
+      "e^(x+1)",
+      "e^x"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tg-h14",
+    "difficulty": "hard",
+    "question": "How many bones does a human baby have at birth (approximately)?",
+    "options": [
+      "206",
+      "300",
+      "270",
+      "350"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tg-h15",
+    "difficulty": "hard",
+    "question": "What is the name for a molecule with the same formula but different structure?",
+    "options": [
+      "Isotope",
+      "Allotrope",
+      "Isomer",
+      "Ion"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tg-r1",
+    "difficulty": "ruinous",
+    "question": "What is the only metal that is liquid at standard room temperature?",
+    "options": [
+      "Gallium",
+      "Cesium",
+      "Mercury",
+      "Bromine (trick — it's not a metal)"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tg-r2",
+    "difficulty": "ruinous",
+    "question": "What is the escape velocity of Earth in km/s?",
+    "options": [
+      "~7.9",
+      "~15.4",
+      "~11.2",
+      "~25.0"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "tg-r3",
+    "difficulty": "ruinous",
+    "question": "What percentage of the human genome codes for proteins?",
+    "options": [
+      "~10%",
+      "~1.5%",
+      "~25%",
+      "~50%"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "tg-r4",
+    "difficulty": "ruinous",
+    "question": "How many known moons does Saturn have (as of 2024)?",
+    "options": [
+      "82",
+      "96",
+      "124",
+      "146"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "tg-r5",
+    "difficulty": "ruinous",
+    "question": "What is Planck's constant approximately?",
+    "options": [
+      "1.602 × 10⁻¹⁹ J",
+      "6.626 × 10⁻³⁴ J·s",
+      "9.109 × 10⁻³¹ kg",
+      "3.0 × 10⁸ m/s"
+    ],
+    "answer": 1
+  }
+]

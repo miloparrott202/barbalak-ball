@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Users, UserPlus, ArrowRight } from "lucide-react";
+import { Users, ArrowRight } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { PlayerList, type Player } from "@/components/player-list";
+import { PlayerList } from "@/components/player-list";
+import type { Player } from "@/lib/types";
 import { QRDisplay } from "@/components/qr-display";
 import { CopyLink } from "@/components/copy-link";
-import { AddPhilDialog } from "@/components/add-phil-dialog";
 
 export default function HostLobbyPage() {
   const { shortCode } = useParams<{ shortCode: string }>();
@@ -17,7 +17,6 @@ export default function HostLobbyPage() {
 
   const [gameId, setGameId] = useState<string | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
-  const [philOpen, setPhilOpen] = useState(false);
   const [proceeding, setProceeding] = useState(false);
 
   const joinUrl =
@@ -44,10 +43,10 @@ export default function HostLobbyPage() {
     async function fetchPlayers() {
       const { data } = await sb
         .from("players")
-        .select("id, name, icon_id, is_phoneless_phil")
+        .select("*")
         .eq("game_id", gameId)
         .order("created_at", { ascending: true });
-      if (data) setPlayers(data);
+      if (data) setPlayers(data as Player[]);
     }
     fetchPlayers();
 
@@ -85,7 +84,6 @@ export default function HostLobbyPage() {
   return (
     <main className="flex flex-1 flex-col items-center px-4 py-8 sm:py-12">
       <div className="w-full max-w-2xl space-y-6">
-        {/* Header */}
         <div className="text-center">
           <p className="mb-1 text-sm font-medium text-emerald-600 tracking-wide uppercase">
             Game Lobby
@@ -95,35 +93,20 @@ export default function HostLobbyPage() {
           </h1>
         </div>
 
-        {/* QR & Link */}
         <Card>
           <CardContent className="flex flex-col items-center gap-5">
             <QRDisplay url={joinUrl} size={180} />
             <CopyLink url={joinUrl} />
-            <p className="text-xs text-zinc-400">
-              Scan the QR code or share the link to invite players
-            </p>
           </CardContent>
         </Card>
 
-        {/* Player List */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-zinc-500" />
-                <h2 className="text-base font-semibold text-zinc-900">
-                  Players ({players.length})
-                </h2>
-              </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setPhilOpen(true)}
-              >
-                <UserPlus className="h-4 w-4" />
-                Add Phoneless Phil
-              </Button>
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-zinc-500" />
+              <h2 className="text-base font-semibold text-zinc-900">
+                Players ({players.length})
+              </h2>
             </div>
           </CardHeader>
           <CardContent>
@@ -131,7 +114,6 @@ export default function HostLobbyPage() {
           </CardContent>
         </Card>
 
-        {/* Actions */}
         <div className="flex justify-center">
           <Button
             size="lg"
@@ -143,14 +125,6 @@ export default function HostLobbyPage() {
           </Button>
         </div>
       </div>
-
-      {gameId && (
-        <AddPhilDialog
-          open={philOpen}
-          onClose={() => setPhilOpen(false)}
-          gameId={gameId}
-        />
-      )}
     </main>
   );
 }

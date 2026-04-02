@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Barbalak-Ball",
-  description: "Real-time party game powered by Supabase",
+  description: "Barbalak-Ball",
 };
 
 export default function RootLayout({

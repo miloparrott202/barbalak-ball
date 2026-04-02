@@ -41,7 +41,7 @@ export function Dialog({ open, onClose, title, children, className }: DialogProp
     >
       <div
         className={cn(
-          "w-full max-w-md rounded-xl bg-white p-6 shadow-xl animate-in fade-in zoom-in-95",
+          "w-full max-w-md rounded-xl bg-white p-6 shadow-xl animate-zoom-in",
           className,
         )}
       >
