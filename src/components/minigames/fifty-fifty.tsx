@@ -14,45 +14,190 @@ interface FiftyFiftyProps {
   onAdvance: (phase: string, extraData?: Record<string, unknown>) => void;
 }
 
-const TYPE_OPTIONS = ["PENALTY", "BONUS"];
-const RARITY_OPTIONS = ["Common", "Rare", "Legendary"];
+const TYPE_OPTIONS = ["PENALTY", "REWARD"];
 
-function SlotMachine({ options, finalValue, duration, onDone }: {
-  options: string[];
+const RARITY_SEGMENTS = [
+  { label: "Common", weight: 50, color: "#a1a1aa" },
+  { label: "Uncommon", weight: 30, color: "#22c55e" },
+  { label: "Rare", weight: 25, color: "#a855f7" },
+  { label: "Legendary", weight: 5, color: "#f59e0b" },
+];
+
+function SlotReel({ items, finalValue, duration, onDone, className }: {
+  items: string[];
   finalValue: string;
   duration: number;
   onDone: () => void;
+  className?: string;
 }) {
-  const [display, setDisplay] = useState(options[0]);
+  const [display, setDisplay] = useState(items[0]);
   const [spinning, setSpinning] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
   useEffect(() => {
     let idx = 0;
     intervalRef.current = setInterval(() => {
-      idx = (idx + 1) % options.length;
-      setDisplay(options[idx]);
+      idx = (idx + 1) % items.length;
+      setDisplay(items[idx]);
     }, 80);
 
     const timer = setTimeout(() => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       setDisplay(finalValue);
       setSpinning(false);
-      setTimeout(onDone, 400);
+      setTimeout(onDone, 500);
     }, duration);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       clearTimeout(timer);
     };
-  }, [options, finalValue, duration, onDone]);
+  }, [items, finalValue, duration, onDone]);
 
   return (
     <div className={cn(
-      "text-4xl font-black uppercase tracking-wider transition-all duration-300",
-      spinning ? "blur-[1px] scale-105" : "blur-0 scale-100",
+      "text-4xl font-black uppercase tracking-wider transition-all duration-300 rounded-xl border-2 border-yellow-400 bg-zinc-900 text-white px-8 py-4 shadow-lg",
+      spinning ? "blur-[2px] scale-105" : "blur-0 scale-100",
+      className,
     )}>
       {display}
+    </div>
+  );
+}
+
+function PlayerSlotReel({ players, finalPlayer, onDone }: {
+  players: Player[];
+  finalPlayer: Player;
+  onDone: () => void;
+}) {
+  const [display, setDisplay] = useState(players[0]);
+  const [spinning, setSpinning] = useState(true);
+  const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
+
+  useEffect(() => {
+    let idx = 0;
+    intervalRef.current = setInterval(() => {
+      idx = (idx + 1) % players.length;
+      setDisplay(players[idx]);
+    }, 120);
+
+    const timer = setTimeout(() => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      setDisplay(finalPlayer);
+      setSpinning(false);
+      setTimeout(onDone, 600);
+    }, 3000);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      clearTimeout(timer);
+    };
+  }, [players, finalPlayer, onDone]);
+
+  return (
+    <div className={cn(
+      "flex flex-col items-center gap-2 transition-all duration-300 rounded-2xl border-2 border-yellow-400 bg-zinc-900 px-10 py-6 shadow-xl",
+      spinning ? "blur-[1px] scale-105" : "blur-0 scale-100",
+    )}>
+      {display.icon_id ? (
+        <img src={`/balls/${display.icon_id}`} alt="" className="w-16 h-16 rounded-full object-cover ring-2 ring-yellow-400" />
+      ) : (
+        <div className="w-16 h-16 rounded-full bg-zinc-700 flex items-center justify-center text-2xl font-bold text-white ring-2 ring-yellow-400">
+          {display.name.charAt(0).toUpperCase()}
+        </div>
+      )}
+      <span className="text-xl font-black text-white">{display.name}</span>
+    </div>
+  );
+}
+
+function RarityWheel({ finalValue, onDone }: { finalValue: string; onDone: () => void }) {
+  const [rotation, setRotation] = useState(0);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    const totalWeight = RARITY_SEGMENTS.reduce((s, seg) => s + seg.weight, 0);
+    const targetIdx = RARITY_SEGMENTS.findIndex(
+      (s) => s.label.toLowerCase() === finalValue.toLowerCase(),
+    );
+    let cumulativeDeg = 0;
+    for (let i = 0; i < targetIdx; i++) {
+      cumulativeDeg += (RARITY_SEGMENTS[i].weight / totalWeight) * 360;
+    }
+    const segDeg = (RARITY_SEGMENTS[targetIdx].weight / totalWeight) * 360;
+    const targetDeg = cumulativeDeg + segDeg / 2;
+    const finalRot = 360 * 7 + ((270 - targetDeg + 360) % 360);
+    setRotation(finalRot);
+
+    const timer = setTimeout(() => {
+      setDone(true);
+      setTimeout(onDone, 400);
+    }, 2800);
+    return () => clearTimeout(timer);
+  }, [finalValue, onDone]);
+
+  const totalWeight = RARITY_SEGMENTS.reduce((s, seg) => s + seg.weight, 0);
+  let startAngle = 0;
+  const paths = RARITY_SEGMENTS.map((seg) => {
+    const angle = (seg.weight / totalWeight) * 360;
+    const endAngle = startAngle + angle;
+    const largeArc = angle > 180 ? 1 : 0;
+    const r = 90;
+    const cx = 100, cy = 100;
+    const x1 = cx + r * Math.cos((Math.PI / 180) * startAngle);
+    const y1 = cy + r * Math.sin((Math.PI / 180) * startAngle);
+    const x2 = cx + r * Math.cos((Math.PI / 180) * endAngle);
+    const y2 = cy + r * Math.sin((Math.PI / 180) * endAngle);
+    const labelAngle = startAngle + angle / 2;
+    const lx = cx + 55 * Math.cos((Math.PI / 180) * labelAngle);
+    const ly = cy + 55 * Math.sin((Math.PI / 180) * labelAngle);
+    const d = `M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc},1 ${x2},${y2} Z`;
+    startAngle = endAngle;
+    return { d, color: seg.color, label: seg.label, lx, ly, labelAngle };
+  });
+
+  return (
+    <div className="relative w-52 h-52 mx-auto">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 z-10 text-yellow-400 text-2xl drop-shadow-lg">▼</div>
+      <svg
+        viewBox="0 0 200 200"
+        className="w-full h-full drop-shadow-xl"
+        style={{
+          transform: `rotate(${rotation}deg)`,
+          transition: "transform 2.5s cubic-bezier(0.17, 0.67, 0.12, 0.99)",
+        }}
+      >
+        {paths.map((p) => (
+          <g key={p.label}>
+            <path d={p.d} fill={p.color} stroke="#fbbf24" strokeWidth="2" />
+            <text
+              x={p.lx}
+              y={p.ly}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fill="white"
+              fontSize="9"
+              fontWeight="bold"
+              transform={`rotate(${p.labelAngle}, ${p.lx}, ${p.ly})`}
+            >
+              {p.label}
+            </text>
+          </g>
+        ))}
+        <circle cx="100" cy="100" r="14" fill="#1e293b" stroke="#fbbf24" strokeWidth="2" />
+      </svg>
+      {done && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className={cn(
+            "text-lg font-black uppercase px-3 py-1 rounded-lg bg-white/90 shadow-lg",
+            finalValue === "legendary" ? "text-amber-600" :
+            finalValue === "rare" ? "text-purple-600" :
+            finalValue === "uncommon" ? "text-green-600" : "text-zinc-600",
+          )}>
+            {finalValue}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -60,7 +205,6 @@ function SlotMachine({ options, finalValue, duration, onDone }: {
 export function FiftyFifty({ round, players, currentPlayerId, isHost, onAdvance }: FiftyFiftyProps) {
   const { phase, data, selectedPlayerIds } = round;
   const selectedId = selectedPlayerIds[0];
-  const isSelected = currentPlayerId === selectedId;
   const selectedPlayer = players.find((p) => p.id === selectedId);
   const type = data.type as string;
   const rarity = data.rarity as string;
@@ -74,12 +218,16 @@ export function FiftyFifty({ round, players, currentPlayerId, isHost, onAdvance 
     onAdvance("active");
   }, [onAdvance]);
 
-  const handleTypeRevealed = useCallback(() => {
+  const handlePlayerRevealed = useCallback(() => {
     setRevealStep(2);
   }, []);
 
-  const handleRarityRevealed = useCallback(() => {
+  const handleTypeRevealed = useCallback(() => {
     setRevealStep(3);
+  }, []);
+
+  const handleRarityRevealed = useCallback(() => {
+    setRevealStep(4);
     if (rarity === "legendary") {
       setLegendaryFlash(true);
       setShaking(true);
@@ -88,7 +236,7 @@ export function FiftyFifty({ round, players, currentPlayerId, isHost, onAdvance 
     }
     setTimeout(() => {
       onAdvance("result");
-    }, rarity === "legendary" ? 2500 : rarity === "rare" ? 1000 : 400);
+    }, rarity === "legendary" ? 2500 : rarity === "rare" ? 1200 : 600);
   }, [rarity, onAdvance]);
 
   useEffect(() => {
@@ -101,10 +249,9 @@ export function FiftyFifty({ round, players, currentPlayerId, isHost, onAdvance 
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
         <h2 className="text-2xl font-bold text-zinc-900 mb-2">50 / 50</h2>
-        <SelectedPlayer player={selectedPlayer} label="Facing Fate" />
-        <p className="text-sm text-zinc-400 mt-4">Penalty or Bonus? Only one way to find out.</p>
-        {(isHost || isSelected) && (
-          <Button onClick={handleFlip} className="mt-6" size="lg">
+        <p className="text-sm text-zinc-400 mt-2 mb-6">Could be good, could be bad. Who knows&hellip;</p>
+        {(isHost) && (
+          <Button onClick={handleFlip} className="mt-2" size="lg">
             Flip the Coin
           </Button>
         )}
@@ -119,53 +266,69 @@ export function FiftyFifty({ round, players, currentPlayerId, isHost, onAdvance 
         shaking && "animate-shake",
       )}>
         {legendaryFlash && (
-          <div className="fixed inset-0 bg-emerald-400/30 animate-pulse pointer-events-none z-50" />
+          <div className="fixed inset-0 bg-amber-400/30 animate-pulse pointer-events-none z-50" />
         )}
 
-        <div className="mb-8">
-          <p className="text-xs tracking-widest uppercase text-zinc-400 mb-4">Revealing...</p>
+        <div className="mb-8 w-full max-w-md">
+          <p className="text-xs tracking-widest uppercase text-zinc-400 mb-6">Revealing...</p>
 
-          {revealStep >= 1 && revealStep < 2 && (
+          {revealStep === 1 && (
             <div className="mb-6">
-              <p className="text-xs text-zinc-400 mb-2 uppercase tracking-wider">Type</p>
-              <SlotMachine
-                options={TYPE_OPTIONS}
-                finalValue={type.toUpperCase()}
-                duration={1500}
-                onDone={handleTypeRevealed}
+              <p className="text-xs text-zinc-400 mb-3 uppercase tracking-wider">Who&apos;s it gonna be?</p>
+              <PlayerSlotReel
+                players={players}
+                finalPlayer={selectedPlayer!}
+                onDone={handlePlayerRevealed}
               />
             </div>
           )}
 
-          {revealStep >= 2 && revealStep < 3 && (
+          {revealStep === 2 && (
             <div className="mb-6">
+              <SelectedPlayer player={selectedPlayer} />
+              <p className="text-xs text-zinc-400 mb-3 uppercase tracking-wider">Penalty or Reward?</p>
+              <div className="flex justify-center">
+                <SlotReel
+                  items={TYPE_OPTIONS}
+                  finalValue={type === "reward" ? "REWARD" : "PENALTY"}
+                  duration={1500}
+                  onDone={handleTypeRevealed}
+                />
+              </div>
+            </div>
+          )}
+
+          {revealStep === 3 && (
+            <div className="mb-6">
+              <SelectedPlayer player={selectedPlayer} />
               <div className={cn(
                 "text-2xl font-black uppercase mb-4",
                 type === "penalty" ? "text-red-500" : "text-emerald-500",
               )}>
-                {type.toUpperCase()}
+                {type === "reward" ? "REWARD" : "PENALTY"}
               </div>
               <p className="text-xs text-zinc-400 mb-2 uppercase tracking-wider">Rarity</p>
-              <SlotMachine
-                options={RARITY_OPTIONS}
-                finalValue={rarity.charAt(0).toUpperCase() + rarity.slice(1)}
-                duration={1500}
+              <RarityWheel
+                finalValue={rarity}
                 onDone={handleRarityRevealed}
               />
             </div>
           )}
 
-          {revealStep >= 3 && (
+          {revealStep >= 4 && (
             <div className="mb-6">
+              <SelectedPlayer player={selectedPlayer} />
               <div className={cn(
                 "text-2xl font-black uppercase mb-2",
                 type === "penalty" ? "text-red-500" : "text-emerald-500",
               )}>
-                {type.toUpperCase()}
+                {type === "reward" ? "REWARD" : "PENALTY"}
               </div>
               <div className={cn(
                 "text-xl font-bold uppercase mb-4",
-                rarity === "legendary" ? "text-amber-500" : rarity === "rare" ? "text-purple-500" : "text-zinc-500",
+                rarity === "legendary" ? "text-amber-500" :
+                rarity === "rare" ? "text-purple-500" :
+                rarity === "uncommon" ? "text-green-500" : "text-zinc-500",
               )}>
                 {rarity.toUpperCase()}
               </div>
@@ -183,11 +346,13 @@ export function FiftyFifty({ round, players, currentPlayerId, isHost, onAdvance 
         rarity === "legendary" && "animate-pulse-slow",
       )}>
         {rarity === "legendary" && (
-          <div className="absolute inset-0 bg-gradient-to-b from-emerald-100/40 to-transparent pointer-events-none rounded-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-b from-amber-100/40 to-transparent pointer-events-none rounded-3xl" />
         )}
         {rarity === "rare" && (
           <div className="absolute inset-0 bg-gradient-to-b from-purple-100/20 to-transparent pointer-events-none rounded-3xl" />
         )}
+
+        <SelectedPlayer player={selectedPlayer} />
 
         <span
           className={cn(
@@ -197,7 +362,7 @@ export function FiftyFifty({ round, players, currentPlayerId, isHost, onAdvance 
               : "bg-emerald-50 text-emerald-600",
           )}
         >
-          {type}
+          {type === "reward" ? "reward" : "penalty"}
         </span>
         <span
           className={cn(
@@ -206,7 +371,9 @@ export function FiftyFifty({ round, players, currentPlayerId, isHost, onAdvance 
               ? "bg-amber-100 text-amber-600 ring-2 ring-amber-300"
               : rarity === "rare"
                 ? "bg-purple-50 text-purple-600"
-                : "bg-zinc-100 text-zinc-500",
+                : rarity === "uncommon"
+                  ? "bg-green-50 text-green-600"
+                  : "bg-zinc-100 text-zinc-500",
           )}
         >
           {rarity}
@@ -215,6 +382,7 @@ export function FiftyFifty({ round, players, currentPlayerId, isHost, onAdvance 
           "rounded-xl px-8 py-6 max-w-sm border",
           rarity === "legendary" ? "bg-amber-50 border-amber-300 shadow-lg shadow-amber-100" :
           rarity === "rare" ? "bg-purple-50 border-purple-200" :
+          rarity === "uncommon" ? "bg-green-50 border-green-200" :
           "bg-zinc-50 border-zinc-200",
         )}>
           <p className={cn(

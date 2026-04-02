@@ -24,7 +24,7 @@ export const triviaQuestions = triviaData as TriviaQuestion[];
 export const scategoryCategories = (scategoriesData as { categories: ScategoryEntry[]; letters: string[] }).categories;
 export const scategoryLetters = (scategoriesData as { categories: ScategoryEntry[]; letters: string[] }).letters;
 
-export const fiftyFifty = fiftyFiftyData as unknown as FiftyFiftyPool;
+export const fiftyFifty = fiftyFiftyData as FiftyFiftyPool;
 export const worldEvents = worldEventsData as WorldEvent[];
 export const funFacts = funFactsData as FunFact[];
 export const shopItems = shopItemsData as ShopItem[];

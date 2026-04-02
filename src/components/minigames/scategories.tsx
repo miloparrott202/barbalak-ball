@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,137 @@ interface ScategoriesProps {
   onAdvance: (phase: string, extraData?: Record<string, unknown>) => void;
 }
 
-type ScatPhase = "staging" | "think" | "defend" | "result";
+type ScatPhase = "staging" | "think" | "defend" | "wheel" | "result";
+
+const SUCCESS_WHEEL = [
+  { label: "Make someone else shotgun", weight: 10, points: 0, color: "#ef4444" },
+  { label: "+10 points", weight: 40, points: 10, color: "#22c55e" },
+  { label: "Hand out a handle pull", weight: 20, points: 0, color: "#f59e0b" },
+  { label: "Make someone else finish their drink", weight: 10, points: 0, color: "#8b5cf6" },
+  { label: "+15 points", weight: 20, points: 15, color: "#06b6d4" },
+];
+
+const DEFEAT_WHEEL = [
+  { label: "Shotgun", weight: 10, points: 0, color: "#ef4444" },
+  { label: "-10 points", weight: 40, points: -10, color: "#64748b" },
+  { label: "Handle pull", weight: 20, points: 0, color: "#f59e0b" },
+  { label: "Finish their drink", weight: 10, points: 0, color: "#8b5cf6" },
+  { label: "-15 points", weight: 20, points: -15, color: "#1e293b" },
+];
+
+function pickWeighted(items: typeof SUCCESS_WHEEL): (typeof SUCCESS_WHEEL)[number] {
+  const total = items.reduce((s, i) => s + i.weight, 0);
+  let roll = Math.random() * total;
+  for (const item of items) {
+    roll -= item.weight;
+    if (roll <= 0) return item;
+  }
+  return items[items.length - 1];
+}
+
+function WheelOfFate({
+  segments,
+  finalLabel,
+  onDone,
+}: {
+  segments: typeof SUCCESS_WHEEL;
+  finalLabel: string;
+  onDone: () => void;
+}) {
+  const [rotation, setRotation] = useState(0);
+  const [landed, setLanded] = useState(false);
+
+  useEffect(() => {
+    const totalWeight = segments.reduce((s, seg) => s + seg.weight, 0);
+    const targetIdx = segments.findIndex((s) => s.label === finalLabel);
+    let cumDeg = 0;
+    for (let i = 0; i < targetIdx; i++) {
+      cumDeg += (segments[i].weight / totalWeight) * 360;
+    }
+    const segDeg = (segments[targetIdx].weight / totalWeight) * 360;
+    const targetDeg = cumDeg + segDeg / 2;
+    const finalRot = 360 * 10 + ((270 - targetDeg + 360) % 360);
+    setRotation(finalRot);
+
+    const timer = setTimeout(() => {
+      setLanded(true);
+      setTimeout(onDone, 800);
+    }, 7200);
+    return () => clearTimeout(timer);
+  }, [segments, finalLabel, onDone]);
+
+  const totalWeight = segments.reduce((s, seg) => s + seg.weight, 0);
+  let startAngle = 0;
+  const paths = segments.map((seg) => {
+    const angle = (seg.weight / totalWeight) * 360;
+    const endAngle = startAngle + angle;
+    const largeArc = angle > 180 ? 1 : 0;
+    const r = 120;
+    const cx = 150, cy = 150;
+    const x1 = cx + r * Math.cos((Math.PI / 180) * startAngle);
+    const y1 = cy + r * Math.sin((Math.PI / 180) * startAngle);
+    const x2 = cx + r * Math.cos((Math.PI / 180) * endAngle);
+    const y2 = cy + r * Math.sin((Math.PI / 180) * endAngle);
+    const labelAngle = startAngle + angle / 2;
+    const lx = cx + 70 * Math.cos((Math.PI / 180) * labelAngle);
+    const ly = cy + 70 * Math.sin((Math.PI / 180) * labelAngle);
+    const d = `M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc},1 ${x2},${y2} Z`;
+    startAngle = endAngle;
+    return { d, color: seg.color, label: seg.label, lx, ly, labelAngle };
+  });
+
+  return (
+    <div className="relative w-72 h-72 mx-auto my-6">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-10 text-yellow-400 text-3xl drop-shadow-lg">
+        ▼
+      </div>
+      <div
+        className="absolute inset-0 rounded-full"
+        style={{
+          background: "radial-gradient(circle, rgba(251,191,36,0.15) 0%, transparent 70%)",
+          boxShadow: "0 0 60px 20px rgba(251,191,36,0.15)",
+        }}
+      />
+      <svg
+        viewBox="0 0 300 300"
+        className="w-full h-full drop-shadow-xl"
+        style={{
+          transform: `rotate(${rotation}deg)`,
+          transition: "transform 7s cubic-bezier(0.17, 0.67, 0.12, 0.99)",
+        }}
+      >
+        {paths.map((p) => (
+          <g key={p.label}>
+            <path d={p.d} fill={p.color} stroke="#fbbf24" strokeWidth="3" />
+            <text
+              x={p.lx}
+              y={p.ly}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fill="white"
+              fontSize="8"
+              fontWeight="bold"
+              transform={`rotate(${p.labelAngle}, ${p.lx}, ${p.ly})`}
+            >
+              {p.label.length > 18 ? p.label.slice(0, 16) + "…" : p.label}
+            </text>
+          </g>
+        ))}
+        <circle cx="150" cy="150" r="18" fill="#1e293b" stroke="#fbbf24" strokeWidth="3" />
+        <text x="150" y="150" textAnchor="middle" dominantBaseline="central" fill="#fbbf24" fontSize="10" fontWeight="bold">
+          FATE
+        </text>
+      </svg>
+      {landed && (
+        <div className="absolute inset-0 flex items-center justify-center z-20">
+          <div className="bg-white/95 rounded-xl px-5 py-3 shadow-2xl border-2 border-yellow-400 max-w-[250px] text-center">
+            <p className="text-base font-black text-zinc-900">{finalLabel}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Scategories({ round, players, currentPlayerId, isHost, gameId, onAdvance }: ScategoriesProps) {
   const { phase: rawPhase, data, selectedPlayerIds } = round;
@@ -33,6 +163,7 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
   const [myVote, setMyVote] = useState<boolean | null>(null);
   const [voteCount, setVoteCount] = useState(0);
   const [totalVoters, setTotalVoters] = useState(0);
+  const [votedPlayerIds, setVotedPlayerIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (scatPhase !== "think") return;
@@ -67,16 +198,30 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
   useEffect(() => {
     if (scatPhase !== "defend" || !gameId) return;
     const sb = getSupabase();
+    const roundNum = data.roundNumber as number;
+
+    async function fetchVotes() {
+      const { data: voteRows } = await sb.from("votes").select("player_id").eq("game_id", gameId).eq("round_number", roundNum);
+      const ids = (voteRows ?? []).map((v: { player_id: string }) => v.player_id);
+      setVotedPlayerIds(ids);
+      setVoteCount(ids.length);
+    }
+
+    fetchVotes();
+
     const channel = sb
-      .channel(`scat-votes-${gameId}`)
+      .channel(`scat-votes-${gameId}-${currentPlayerId}-${roundNum}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "votes", filter: `game_id=eq.${gameId}` },
-        async () => {
-          const { count } = await sb.from("votes").select("*", { count: "exact", head: true }).eq("game_id", gameId).eq("round_number", data.roundNumber as number);
-          setVoteCount(count ?? 0);
-        })
+        () => { fetchVotes(); })
       .subscribe();
-    return () => { sb.removeChannel(channel); };
-  }, [scatPhase, gameId, data.roundNumber]);
+
+    const pollInterval = setInterval(fetchVotes, 2000);
+
+    return () => {
+      sb.removeChannel(channel);
+      clearInterval(pollInterval);
+    };
+  }, [scatPhase, gameId, data.roundNumber, currentPlayerId]);
 
   useEffect(() => {
     const voters = players.filter((p) => p.id !== hotSeatId);
@@ -118,28 +263,36 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
     const noVotes = (totalCast - yesVotes) + nonVoters;
     const accepted = yesVotes >= noVotes;
 
-    onAdvance("result", { accepted, yesVotes, noVotes: noVotes });
+    const wheel = accepted ? SUCCESS_WHEEL : DEFEAT_WHEEL;
+    const outcome = pickWeighted(wheel);
+
+    onAdvance("active", {
+      scatPhase: "wheel",
+      accepted,
+      yesVotes,
+      noVotes,
+      wheelOutcome: outcome.label,
+      wheelPoints: outcome.points,
+    });
   }, [gameId, data.roundNumber, totalVoters, onAdvance]);
+
+  const notVotedPlayers = useMemo(() => {
+    return players.filter((p) => p.id !== hotSeatId && !votedPlayerIds.includes(p.id));
+  }, [players, hotSeatId, votedPlayerIds]);
 
   if (rawPhase === "staging" && scatPhase === "staging") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
         <h2 className="text-2xl font-bold text-zinc-900 mb-2">Scategories</h2>
         <SelectedPlayer player={hotSeatPlayer} label="On the Hot Seat" />
-        <div className="flex items-center gap-4 mt-2">
-          <div className="rounded-xl bg-zinc-50 border border-zinc-200 px-6 py-4 text-center">
-            <p className="text-xs text-zinc-400 uppercase tracking-wider">Category</p>
-            <p className="text-lg font-bold text-zinc-900">{category}</p>
-          </div>
-          <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-6 py-4 text-center">
-            <p className="text-xs text-emerald-500 uppercase tracking-wider">Letter</p>
-            <p className="text-3xl font-black text-emerald-700">{letter}</p>
-          </div>
-        </div>
-        {isHost && (
+        <p className="text-sm text-zinc-400 mt-2">Letter and category will appear when {hotSeatPlayer?.name} hits Play</p>
+        {isHotSeat && (
           <Button onClick={() => onAdvance("active", { scatPhase: "think" })} className="mt-6">
-            Start Round
+            Play
           </Button>
+        )}
+        {!isHotSeat && (
+          <p className="text-sm text-zinc-400 mt-4">Waiting for {hotSeatPlayer?.name} to start...</p>
         )}
       </div>
     );
@@ -160,7 +313,7 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
           <span className="text-xl font-black text-emerald-600">{letter}</span>
         </div>
         <p className="text-sm text-zinc-400">
-          {isHotSeat ? "Think of a word — don't say it yet!" : `${hotSeatPlayer?.name} is thinking...`}
+          {isHotSeat ? "Say it as soon as you've got one!" : `${hotSeatPlayer?.name} is thinking...`}
         </p>
       </div>
     );
@@ -184,13 +337,21 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
         </div>
 
         {isVoter && myVote === null && (
-          <div className="flex gap-4">
-            <Button onClick={() => handleVote(true)} className="px-8 py-4 text-lg">
-              👍 Accept
-            </Button>
-            <Button variant="danger" onClick={() => handleVote(false)} className="px-8 py-4 text-lg">
-              👎 Reject
-            </Button>
+          <div className="flex gap-6">
+            <button
+              onClick={() => handleVote(true)}
+              className="flex flex-col items-center gap-1 rounded-xl border-2 border-emerald-300 bg-emerald-50 px-6 py-4 hover:bg-emerald-100 transition-colors active:scale-95"
+            >
+              <img src="/images/yes.png" alt="Yes" className="w-14 h-14 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              <span className="text-sm font-bold text-emerald-700">Accept</span>
+            </button>
+            <button
+              onClick={() => handleVote(false)}
+              className="flex flex-col items-center gap-1 rounded-xl border-2 border-red-300 bg-red-50 px-6 py-4 hover:bg-red-100 transition-colors active:scale-95"
+            >
+              <img src="/images/no.png" alt="No" className="w-14 h-14 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              <span className="text-sm font-bold text-red-700">Reject</span>
+            </button>
           </div>
         )}
 
@@ -198,19 +359,62 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
           <p className="text-emerald-600 font-semibold">Vote cast!</p>
         )}
 
-        {isHotSeat && (
-          <p className="text-zinc-400 text-sm">Defend your answer out loud!</p>
-        )}
-
         <p className="text-xs text-zinc-400 mt-4">{voteCount} / {totalVoters} voted</p>
+
+        {notVotedPlayers.length > 0 && (
+          <div className="mt-2">
+            <p className="text-xs text-zinc-400 mb-1">Waiting on:</p>
+            <div className="flex flex-wrap gap-1 justify-center">
+              {notVotedPlayers.map((p) => (
+                <span key={p.id} className="text-xs bg-zinc-100 text-zinc-600 rounded-full px-2 py-0.5">
+                  {p.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
-  if (rawPhase === "result") {
+  if (scatPhase === "wheel") {
+    const accepted = data.accepted as boolean;
+    const wheelOutcome = data.wheelOutcome as string;
+    const segments = accepted ? SUCCESS_WHEEL : DEFEAT_WHEEL;
+
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
+        <h2 className="text-xl font-bold text-zinc-900 mb-1">
+          {hotSeatPlayer?.name} must now spin the Wheel of Fate
+        </h2>
+        <p className={cn("text-sm font-semibold mb-2", accepted ? "text-emerald-600" : "text-red-500")}>
+          {accepted ? "The crowd accepts!" : "The crowd rejects!"}
+        </p>
+        <WheelOfFate
+          segments={segments}
+          finalLabel={wheelOutcome}
+          onDone={() => {
+            if (isHost) {
+              onAdvance("result", {
+                scatPhase: "result",
+                wheelOutcome: data.wheelOutcome,
+                wheelPoints: data.wheelPoints,
+                accepted: data.accepted,
+                yesVotes: data.yesVotes,
+                noVotes: data.noVotes,
+              });
+            }
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (rawPhase === "result" || scatPhase === "result") {
     const accepted = data.accepted as boolean;
     const yesVotes = (data.yesVotes as number) ?? 0;
     const noVotes = (data.noVotes as number) ?? 0;
+    const wheelOutcome = data.wheelOutcome as string;
 
     return (
       <div className="flex flex-col items-center justify-center px-4 text-center py-8">
@@ -231,9 +435,17 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
           </div>
         </div>
 
-        <p className={cn("font-semibold text-lg", accepted ? "text-emerald-600" : "text-red-500")}>
-          {accepted ? `Accepted! +5 pts to ${hotSeatPlayer?.name}` : `Rejected! -5 pts for ${hotSeatPlayer?.name}`}
+        <p className={cn("font-bold text-xl mb-2", accepted ? "text-emerald-600" : "text-red-500")}>
+          {accepted ? "Accepted!" : "Rejected!"}
         </p>
+        {wheelOutcome && (
+          <div className={cn(
+            "rounded-xl px-6 py-3 border font-semibold text-lg",
+            accepted ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-red-50 border-red-200 text-red-700",
+          )}>
+            {wheelOutcome}
+          </div>
+        )}
       </div>
     );
   }

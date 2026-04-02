@@ -2,15 +2,19 @@
   {
     "id": "charades",
     "label": "Charades",
-    "description": "Act it out, no words allowed",
+    "description": "Actor will act out a secret word. If someone guesses it correctly, the guesser and actor get to make everyone else drink. If the actor can't hack it, they will finish their drink.",
     "dataFile": "charades.json",
     "enabled": true,
-    "type": "minigame"
+    "type": "minigame",
+    "subcategories": [
+      { "id": "charades-default", "label": "Default Pool", "dataFile": "charades.json", "enabled": true },
+      { "id": "charades-custom", "label": "Add Your Own", "dataFile": "", "enabled": false }
+    ]
   },
   {
     "id": "trivia",
     "label": "Trivia",
-    "description": "Multiple-choice knowledge gauntlet",
+    "description": "Glory and fame for those who answer correctly. Death and despair for those who do not.",
     "dataFile": "trivia.json",
     "enabled": true,
     "type": "minigame"
@@ -18,7 +22,7 @@
   {
     "id": "scategories",
     "label": "Scategories",
-    "description": "Think fast, defend harder",
+    "description": "Player will be given a letter and a category. Five seconds to think of a word and 15 seconds to defend.",
     "dataFile": "scategories.json",
     "enabled": true,
     "type": "minigame"
@@ -26,7 +30,7 @@
   {
     "id": "fifty-fifty",
     "label": "Fifty Fifty",
-    "description": "Vegas slots of chaos — penalty or bonus",
+    "description": "Could be good, could be bad. How bad? How good? Who knows\u2026",
     "dataFile": "fifty-fifty.json",
     "enabled": true,
     "type": "minigame"
@@ -34,7 +38,7 @@
   {
     "id": "world-events",
     "label": "World Events",
-    "description": "Random global chaos between minigames",
+    "description": "",
     "dataFile": "world-events.json",
     "enabled": true,
     "type": "event"
@@ -42,9 +46,17 @@
   {
     "id": "fun-facts",
     "label": "Fun Fact Interjection",
-    "description": "Bizarre facts, ridiculous statements, and Escher sentences between rounds",
+    "description": "",
     "dataFile": "fun-facts.json",
     "enabled": true,
+    "type": "event"
+  },
+  {
+    "id": "let-em-fly",
+    "label": "Let 'em Fly",
+    "description": "",
+    "dataFile": "",
+    "enabled": false,
     "type": "event"
   }
 ]

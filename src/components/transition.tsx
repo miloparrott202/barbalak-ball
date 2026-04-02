@@ -12,13 +12,6 @@ const LABELS: Record<MinigameType, string> = {
   "fifty-fifty": "50 / 50",
 };
 
-const DESCRIPTIONS: Record<MinigameType, string> = {
-  charades: "One player acts it out. Everyone else guesses!",
-  trivia: "Answer fast. Answer right. Don't choke.",
-  scategories: "Think of a word. Defend your answer. Survive the vote.",
-  "fifty-fifty": "Flip the coin of fate. Penalty or bonus?",
-};
-
 interface TransitionProps {
   minigame: MinigameType;
   onComplete: () => void;
@@ -41,6 +34,7 @@ export function Transition({ minigame, onComplete }: TransitionProps) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 relative">
       <FloatingBalls />
+
       <div className="mb-8 text-center relative z-10">
         <p className="text-xs tracking-widest uppercase text-zinc-400 mb-1">
           Up Next
@@ -48,9 +42,6 @@ export function Transition({ minigame, onComplete }: TransitionProps) {
         <h2 className="text-3xl font-extrabold text-zinc-900">
           {LABELS[minigame]}
         </h2>
-        <p className="text-sm text-zinc-500 mt-2 max-w-xs">
-          {DESCRIPTIONS[minigame]}
-        </p>
       </div>
 
       <div className="flex items-center gap-6 relative z-10">

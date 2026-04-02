@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2, Info } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
+import { categories as allCategories } from "@/lib/content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,7 +18,19 @@ import { FiftyFifty } from "@/components/minigames/fifty-fifty";
 import { WorldEventCard } from "@/components/events/world-event";
 import { FunFactCard } from "@/components/events/fun-fact";
 import { IconPicker } from "@/components/icon-picker";
-import type { Game, Player } from "@/lib/types";
+import { FloatingBalls } from "@/components/floating-balls";
+import { MinigameDescriptionPopup } from "@/components/minigame-description";
+import { updateGameRound } from "@/lib/game-engine";
+import type { Game, Player, CurrentRound, MinigameType } from "@/lib/types";
+
+const SESSION_KEY_PREFIX = "bb-player-";
+
+function getStoredPlayerId(shortCode: string): string | null {
+  try { return localStorage.getItem(`${SESSION_KEY_PREFIX}${shortCode}`); } catch { return null; }
+}
+function storePlayerId(shortCode: string, playerId: string) {
+  try { localStorage.setItem(`${SESSION_KEY_PREFIX}${shortCode}`, playerId); } catch { /* noop */ }
+}
 
 export default function JoinPage() {
   const { shortCode } = useParams<{ shortCode: string }>();
@@ -26,12 +39,31 @@ export default function JoinPage() {
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [myPlayer, setMyPlayer] = useState<Player | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [restoringSession, setRestoringSession] = useState(true);
 
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("ball-1.png");
   const [submitting, setSubmitting] = useState(false);
+  const [phrase1, setPhrase1] = useState("");
+  const [phrase2, setPhrase2] = useState("");
+  const [phrasesSubmitted, setPhrasesSubmitted] = useState(false);
+  const [descPopup, setDescPopup] = useState<MinigameType | null>(null);
+
+  const gameRef = useRef<Game | null>(null);
+  useEffect(() => { gameRef.current = game; }, [game]);
 
   const noop = useCallback(() => {}, []);
+
+  const handleAdvance = useCallback(
+    async (phase: string, extraData?: Record<string, unknown>) => {
+      const g = gameRef.current;
+      if (!g?.current_round) return;
+      const r = g.current_round;
+      const updatedData: Record<string, unknown> = extraData ? { ...r.data, ...extraData } : { ...r.data };
+      await updateGameRound(g.id, { ...r, phase: phase as CurrentRound["phase"], data: updatedData });
+    },
+    [],
+  );
 
   useEffect(() => {
     const sb = getSupabase();
@@ -45,7 +77,7 @@ export default function JoinPage() {
         .eq("short_code", shortCode)
         .single();
 
-      if (error || !data) { setNotFound(true); return; }
+      if (error || !data) { setNotFound(true); setRestoringSession(false); return; }
       setGame(data as Game);
 
       const { data: ps } = await sb
@@ -54,6 +86,15 @@ export default function JoinPage() {
         .eq("game_id", data.id)
         .order("created_at", { ascending: true });
       if (ps) setAllPlayers(ps as Player[]);
+
+      const storedId = getStoredPlayerId(shortCode);
+      if (storedId && ps) {
+        const existing = (ps as Player[]).find((p) => p.id === storedId);
+        if (existing) {
+          setMyPlayer(existing);
+        }
+      }
+      setRestoringSession(false);
 
       gameCh = sb
         .channel(`player-game-${data.id}`)
@@ -95,7 +136,9 @@ export default function JoinPage() {
         .select()
         .single();
       if (error) throw error;
-      setMyPlayer(data as Player);
+      const player = data as Player;
+      setMyPlayer(player);
+      storePlayerId(shortCode, player.id);
     } catch (err) {
       console.error("Failed to join:", err);
     } finally {
@@ -114,7 +157,7 @@ export default function JoinPage() {
     );
   }
 
-  if (!game) {
+  if (!game || restoringSession) {
     return (
       <main className="flex flex-1 items-center justify-center">
         <p className="text-zinc-400">Loading...</p>
@@ -164,9 +207,14 @@ export default function JoinPage() {
     );
   }
 
+  const minigames = allCategories.filter((c) => c.type === "minigame" && c.description);
+
   if (game.status === "lobby" || game.status === "settings") {
     return (
       <main className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+        {descPopup && (
+          <MinigameDescriptionPopup minigame={descPopup} onClose={() => setDescPopup(null)} />
+        )}
         <div className="space-y-4">
           <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" />
           <h1 className="text-2xl font-bold text-zinc-900">You&apos;re In!</h1>
@@ -180,6 +228,22 @@ export default function JoinPage() {
                 ? "Waiting for host to start\u2026"
                 : "Host is configuring the game\u2026"}
             </span>
+          </div>
+
+          <div className="mt-6 w-full max-w-xs mx-auto">
+            <p className="text-xs uppercase tracking-wider text-zinc-400 mb-3">Tap to read rules</p>
+            <div className="space-y-2">
+              {minigames.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setDescPopup(cat.id as MinigameType)}
+                  className="w-full flex items-center justify-between rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-left hover:bg-zinc-50 transition-colors"
+                >
+                  <span className="text-sm font-medium text-zinc-900">{cat.label}</span>
+                  <Info className="h-4 w-4 text-zinc-400" />
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </main>
@@ -200,8 +264,56 @@ export default function JoinPage() {
 
   const round = game.current_round;
 
+  if (round?.data?.collectingPhrases && !phrasesSubmitted) {
+    const submitted = (round.data.submittedPlayers as string[] ?? []);
+    if (submitted.includes(myPlayer.id)) {
+      setPhrasesSubmitted(true);
+    } else {
+      return (
+        <main className="flex flex-1 flex-col items-center justify-center px-4">
+          <h2 className="text-2xl font-bold text-zinc-900 mb-2">Add Your Charades</h2>
+          <p className="text-sm text-zinc-500 mb-6">Enter 2 phrases for charades!</p>
+          <div className="w-full max-w-xs space-y-3">
+            <Input placeholder="Phrase 1" value={phrase1} onChange={(e) => setPhrase1(e.target.value)} />
+            <Input placeholder="Phrase 2" value={phrase2} onChange={(e) => setPhrase2(e.target.value)} />
+            <Button className="w-full" onClick={async () => {
+              const phrases = [phrase1.trim(), phrase2.trim()].filter(Boolean);
+              if (phrases.length === 0) return;
+              setPhrasesSubmitted(true);
+              const existing = (round.data.customPhrases as string[] ?? []);
+              const existingSubmitted = (round.data.submittedPlayers as string[] ?? []);
+              await updateGameRound(game.id, {
+                ...round,
+                data: {
+                  ...round.data,
+                  customPhrases: [...existing, ...phrases],
+                  submittedPlayers: [...existingSubmitted, myPlayer.id],
+                },
+              });
+            }}>
+              Submit
+            </Button>
+          </div>
+        </main>
+      );
+    }
+  }
+
+  if (round?.data?.collectingPhrases && phrasesSubmitted) {
+    return (
+      <main className="flex flex-1 flex-col items-center justify-center px-4 text-center">
+        <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600 mb-4" />
+        <h2 className="text-xl font-bold text-zinc-900">Phrases Submitted!</h2>
+        <p className="text-sm text-zinc-400 mt-2">Waiting for everyone else...</p>
+      </main>
+    );
+  }
+
+  const letEmFly = (game.enabled_categories ?? []).includes("let-em-fly");
+
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-4 pt-14">
+      {letEmFly && <FloatingBalls />}
       <Hud player={myPlayer} allPlayers={allPlayers} gameId={game.id} />
 
       {(!round || round.phase === "scoreboard") && (
@@ -230,13 +342,13 @@ export default function JoinPage() {
       {round && ["staging", "active", "result"].includes(round.phase) && (
         <>
           {round.minigame === "charades" && (
-            <Charades round={round} players={allPlayers} currentPlayerId={myPlayer.id} isHost={false} onAdvance={noop} />
+            <Charades round={round} players={allPlayers} currentPlayerId={myPlayer.id} isHost={false} onAdvance={handleAdvance} />
           )}
           {round.minigame === "trivia" && (
             <Trivia round={round} players={allPlayers} currentPlayerId={myPlayer.id} isHost={false} gameId={game.id} onAdvance={noop} />
           )}
           {round.minigame === "scategories" && (
-            <Scategories round={round} players={allPlayers} currentPlayerId={myPlayer.id} isHost={false} gameId={game.id} onAdvance={() => {}} />
+            <Scategories round={round} players={allPlayers} currentPlayerId={myPlayer.id} isHost={false} gameId={game.id} onAdvance={handleAdvance} />
           )}
           {round.minigame === "fifty-fifty" && (
             <FiftyFifty round={round} players={allPlayers} currentPlayerId={myPlayer.id} isHost={false} onAdvance={noop} />

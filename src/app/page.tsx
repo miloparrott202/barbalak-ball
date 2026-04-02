@@ -1,15 +1,24 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import Image from "next/image";
+import { useState, useEffect } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { generateShortCode } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
+const LOGO_BALLS = Array.from({ length: 10 }, (_, i) => `/logo-balls/ball-${i + 1}.png`);
+
 export default function LandingPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [ballIdx, setBallIdx] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBallIdx((prev) => (prev + 1) % LOGO_BALLS.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   async function handleHost() {
     setLoading(true);
@@ -31,13 +40,12 @@ export default function LandingPage() {
     <main className="flex flex-1 flex-col items-center justify-center px-6">
       <div className="flex flex-col items-center gap-8 text-center">
         <div className="flex items-center gap-4">
-          <Image
-            src="/logo.png"
+          <img
+            src={LOGO_BALLS[ballIdx]}
             alt="Barbalak-Ball"
             width={56}
             height={56}
-            className="rounded-2xl"
-            priority
+            className="rounded-2xl transition-opacity duration-300"
           />
           <h1 className="text-4xl font-bold tracking-tight text-zinc-900 sm:text-5xl">
             Barbalak-Ball

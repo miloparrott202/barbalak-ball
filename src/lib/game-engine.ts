@@ -16,6 +16,7 @@ import type {
   MinigameType,
   Player,
   TriviaQuestion,
+  FiftyFiftyRarity,
 } from "./types";
 
 const MINIGAMES: MinigameType[] = ["charades", "trivia", "scategories", "fifty-fifty"];
@@ -42,10 +43,21 @@ export function selectPlayers(players: Player[], count: number): Player[] {
   return shuffleArray(players).slice(0, count);
 }
 
-export function buildCharadesRound(selectedPlayer: Player, usedIds: string[]): CurrentRound {
-  const available = charades.filter((c) => !usedIds.includes(c.id) && c.phrase?.trim());
-  const pool = available.length > 0 ? available : charades.filter((c) => c.phrase?.trim());
-  const phrase = pickRandom(pool.length > 0 ? pool : charades);
+export function buildCharadesRound(selectedPlayer: Player, usedIds: string[], customPhrases: string[] = [], useDefault = true): CurrentRound {
+  let pool: { id: string; phrase: string }[] = [];
+
+  if (useDefault) {
+    const available = charades.filter((c) => !usedIds.includes(c.id) && c.phrase?.trim());
+    pool = available.length > 0 ? available : charades.filter((c) => c.phrase?.trim());
+  }
+
+  const customEntries = customPhrases
+    .filter((p) => p.trim() && !usedIds.includes(`custom-${p}`))
+    .map((p) => ({ id: `custom-${p}`, phrase: p }));
+  pool = [...pool, ...customEntries];
+
+  if (pool.length === 0) pool = charades;
+  const phrase = pickRandom(pool);
   return {
     minigame: "charades",
     phase: "transition",
@@ -56,33 +68,45 @@ export function buildCharadesRound(selectedPlayer: Player, usedIds: string[]): C
 }
 
 export function buildTriviaRound(
-  selectedPlayer: Player,
+  players: Player[],
   usedIds: string[],
 ): CurrentRound {
+  const questionCount = Math.max(1, Math.ceil(players.length / 2));
   const available = triviaQuestions.filter((q) => !usedIds.includes(q.id));
   const source = available.length > 0 ? available : triviaQuestions;
 
-  const difficulty = weightedRandom([
-    { value: "easy", weight: 30 },
-    { value: "medium", weight: 30 },
-    { value: "hard", weight: 30 },
-    { value: "ruinous", weight: 10 },
-  ]);
+  const questions: { question: TriviaQuestion; playerId: string }[] = [];
+  const shuffledPlayers = shuffleArray(players);
 
-  const matches = source.filter((q) => q.difficulty === difficulty);
-  const question = matches.length > 0 ? pickRandom(matches) : pickRandom(source);
+  for (let i = 0; i < questionCount; i++) {
+    const difficulty = weightedRandom([
+      { value: "easy" as const, weight: 30 },
+      { value: "medium" as const, weight: 30 },
+      { value: "hard" as const, weight: 30 },
+      { value: "ruinous" as const, weight: 10 },
+    ]);
+
+    const matches = source.filter(
+      (q) => q.difficulty === difficulty && !questions.some((qr) => qr.question.id === q.id),
+    );
+    const question = matches.length > 0 ? pickRandom(matches) : pickRandom(source);
+    const player = shuffledPlayers[i % shuffledPlayers.length];
+
+    questions.push({ question, playerId: player.id });
+  }
 
   return {
     minigame: "trivia",
     phase: "transition",
-    selectedPlayerIds: [selectedPlayer.id],
+    selectedPlayerIds: questions.map((q) => q.playerId),
     data: {
-      questionData: question,
+      questions,
+      currentQ: 0,
+      totalQuestions: questions.length,
     },
     startedAt: new Date().toISOString(),
   };
 }
-
 
 export function buildScategoriesRound(selectedPlayer: Player, usedIds: string[]): CurrentRound {
   const available = scategoryCategories.filter((c) => !usedIds.includes(c.id));
@@ -99,15 +123,17 @@ export function buildScategoriesRound(selectedPlayer: Player, usedIds: string[])
   };
 }
 
-export function buildFiftyFiftyRound(selectedPlayer: Player): CurrentRound {
-  const type = Math.random() < 0.5 ? "penalty" : "bonus";
-  const rarity = weightedRandom([
-    { value: "common" as const, weight: 65 },
-    { value: "rare" as const, weight: 30 },
+export function buildFiftyFiftyRound(players: Player[]): CurrentRound {
+  const selectedPlayer = pickRandom(players);
+  const type: "penalty" | "reward" = Math.random() < 0.5 ? "penalty" : "reward";
+  const rarity: FiftyFiftyRarity = weightedRandom([
+    { value: "common" as const, weight: 50 },
+    { value: "uncommon" as const, weight: 30 },
+    { value: "rare" as const, weight: 25 },
     { value: "legendary" as const, weight: 5 },
   ]);
 
-  const pool = type === "penalty" ? fiftyFifty.penalties : fiftyFifty.bonuses;
+  const pool = type === "penalty" ? fiftyFifty.penalties : fiftyFifty.rewards;
   const actions = pool[rarity];
   const action = pickRandom(actions);
 
@@ -115,7 +141,13 @@ export function buildFiftyFiftyRound(selectedPlayer: Player): CurrentRound {
     minigame: "fifty-fifty",
     phase: "transition",
     selectedPlayerIds: [selectedPlayer.id],
-    data: { type, rarity, actionId: action.id, action: action.action },
+    data: {
+      type,
+      rarity,
+      actionId: action.id,
+      action: action.action,
+      allPlayerIds: players.map((p) => p.id),
+    },
     startedAt: new Date().toISOString(),
   };
 }
@@ -166,38 +198,6 @@ export async function getUsedContent(gameId: string, contentType: string): Promi
     .eq("game_id", gameId)
     .eq("content_type", contentType);
   return data?.map((r) => r.content_id) ?? [];
-}
-
-export function getDifficultyPoints(difficulty: string): number {
-  switch (difficulty) {
-    case "easy": return 2;
-    case "medium": return 3;
-    case "hard": return 5;
-    case "ruinous": return 10;
-    default: return 2;
-  }
-}
-
-export async function tallyTriviaScores(gameId: string, round: CurrentRound) {
-  const sb = getSupabase();
-  const question = round.data.questionData as TriviaQuestion;
-  const selectedPlayerId = round.selectedPlayerIds[0];
-
-  const { data: answers } = await sb
-    .from("answers")
-    .select("*")
-    .eq("game_id", gameId)
-    .eq("question_id", question.id)
-    .eq("player_id", selectedPlayerId);
-
-  const correct = answers?.some((a) => a.is_correct) ?? false;
-  if (correct) {
-    const pts = getDifficultyPoints(question.difficulty);
-    await addScore(selectedPlayerId, pts);
-  }
-
-  await markContentUsed(gameId, "trivia", question.id);
-  return correct;
 }
 
 export async function executePendingPurchases(gameId: string) {

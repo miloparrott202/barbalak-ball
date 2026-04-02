@@ -17,13 +17,17 @@ import {
   markContentUsed,
   getUsedContent,
   executePendingPurchases,
-  tallyTriviaScores,
 } from "@/lib/game-engine";
 import { shopItems } from "@/lib/content";
-import type { Game, Player, CurrentRound } from "@/lib/types";
 
+import type { Game, Player, CurrentRound, TriviaQuestion } from "@/lib/types";
+
+import { Pause, Play, SkipForward } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Scoreboard } from "@/components/scoreboard";
 import { Transition } from "@/components/transition";
+import { FloatingBalls } from "@/components/floating-balls";
 import { Charades } from "@/components/minigames/charades";
 import { Trivia } from "@/components/minigames/trivia";
 import { Scategories } from "@/components/minigames/scategories";
@@ -39,13 +43,31 @@ export default function HostPlayPage() {
   const [hostPlayerId, setHostPlayerId] = useState<string>("");
   const [notification, setNotification] = useState<string | null>(null);
   const [roundBusy, setRoundBusy] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [customPhrases, setCustomPhrases] = useState<string[]>([]);
+  const [collectingPhrases, setCollectingPhrases] = useState(false);
+  const [hostPhrase1, setHostPhrase1] = useState("");
+  const [hostPhrase2, setHostPhrase2] = useState("");
+  const [hostPhrasesSubmitted, setHostPhrasesSubmitted] = useState(false);
   const notifTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const gameRef = useRef<Game | null>(null);
   const playersRef = useRef<Player[]>([]);
+  const customPhrasesRef = useRef<string[]>([]);
 
   useEffect(() => { gameRef.current = game; }, [game]);
   useEffect(() => { playersRef.current = players; }, [players]);
+  useEffect(() => { customPhrasesRef.current = customPhrases; }, [customPhrases]);
+
+  useEffect(() => {
+    if (!collectingPhrases || !game?.id) return;
+    const sb = getSupabase();
+    const interval = setInterval(async () => {
+      const { data: fresh } = await sb.from("games").select("*").eq("id", game.id).single();
+      if (fresh) setGame(fresh as Game);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [collectingPhrases, game?.id]);
 
   const showNotification = useCallback((msg: string) => {
     setNotification(msg);
@@ -93,7 +115,17 @@ export default function HostPlayPage() {
           })
         .subscribe();
 
-      if (!g.current_round) {
+      const enabledIds = g.enabled_categories ?? [];
+      if (enabledIds.includes("charades-custom") && !g.current_round) {
+        await updateGameRound(g.id, {
+          minigame: "charades",
+          phase: "scoreboard",
+          selectedPlayerIds: [],
+          data: { collectingPhrases: true },
+          startedAt: new Date().toISOString(),
+        });
+        setCollectingPhrases(true);
+      } else if (!g.current_round) {
         await updateGameRound(g.id, { minigame: "charades", phase: "scoreboard", selectedPlayerIds: [], data: {}, startedAt: new Date().toISOString() });
       }
     }
@@ -119,13 +151,13 @@ export default function HostPlayPage() {
       case "charades": {
         const used = await getUsedContent(g.id, "charades");
         const p = selectPlayers(pl, 1)[0];
-        round = buildCharadesRound(p, used);
+        const useDefault = enabledIds.includes("charades-default");
+        round = buildCharadesRound(p, used, customPhrasesRef.current, useDefault);
         break;
       }
       case "trivia": {
         const used = await getUsedContent(g.id, "trivia");
-        const p = selectPlayers(pl, 1)[0];
-        round = buildTriviaRound(p, used);
+        round = buildTriviaRound(pl, used);
         break;
       }
       case "scategories": {
@@ -135,8 +167,7 @@ export default function HostPlayPage() {
         break;
       }
       case "fifty-fifty": {
-        const p = selectPlayers(pl, 1)[0];
-        round = buildFiftyFiftyRound(p);
+        round = buildFiftyFiftyRound(pl);
         break;
       }
     }
@@ -214,19 +245,39 @@ export default function HostPlayPage() {
       const updatedData: Record<string, unknown> = extraData ? { ...r.data, ...extraData } : { ...r.data };
 
       if (phase === "result") {
-        if (r.minigame === "charades" && extraData?.success) {
-          await addScore(r.selectedPlayerIds[0], 5);
+        if (r.minigame === "charades") {
+          const success = extraData?.success ?? updatedData.success;
+          const actorId = r.selectedPlayerIds[0];
+          if (success) {
+            await addScore(actorId, 10);
+          } else {
+            await addScore(actorId, -10);
+          }
           await markContentUsed(g.id, "charades", r.data.phraseId as string);
         }
-        if (r.minigame === "trivia" && r.phase !== "result") {
-          const correct = await tallyTriviaScores(g.id, r);
-          updatedData.correct = correct;
+
+        if (r.minigame === "trivia") {
+          const scores = (extraData?.resultScores ?? updatedData.resultScores) as
+            { playerId: string; correct: boolean }[] | undefined;
+          if (scores) {
+            for (const s of scores) {
+              if (s.correct) {
+                await addScore(s.playerId, 10);
+              } else {
+                await addScore(s.playerId, -5);
+              }
+            }
+            const questions = (r.data.questions ?? []) as { question: TriviaQuestion }[];
+            for (const q of questions) {
+              await markContentUsed(g.id, "trivia", q.question.id);
+            }
+          }
         }
-        if (r.minigame === "scategories" && extraData?.accepted !== undefined && r.data.accepted === undefined) {
-          if (extraData.accepted) {
-            await addScore(r.selectedPlayerIds[0], 5);
-          } else {
-            await addScore(r.selectedPlayerIds[0], -5);
+
+        if (r.minigame === "scategories" && updatedData.wheelPoints !== undefined && updatedData.scatPhase === "result") {
+          const pts = updatedData.wheelPoints as number;
+          if (pts !== 0) {
+            await addScore(r.selectedPlayerIds[0], pts);
           }
           await markContentUsed(g.id, "scategories", r.data.categoryId as string);
         }
@@ -236,6 +287,27 @@ export default function HostPlayPage() {
     },
     [],
   );
+
+  const handlePauseToggle = useCallback(async () => {
+    const g = gameRef.current;
+    if (!g?.current_round) return;
+    const newPaused = !paused;
+    setPaused(newPaused);
+    await updateGameRound(g.id, { ...g.current_round, data: { ...g.current_round.data, paused: newPaused } });
+  }, [paused]);
+
+  const handleSkip = useCallback(async () => {
+    const g = gameRef.current;
+    if (!g) return;
+    setPaused(false);
+    await updateGameRound(g.id, {
+      minigame: g.current_round?.minigame ?? "charades",
+      phase: "scoreboard",
+      selectedPlayerIds: [],
+      data: {},
+      startedAt: new Date().toISOString(),
+    });
+  }, []);
 
   const handleTransitionDone = useCallback(() => {
     handleAdvance("staging");
@@ -286,6 +358,56 @@ export default function HostPlayPage() {
     );
   }
 
+  if (collectingPhrases) {
+    const submittedCount = (game.current_round?.data?.submittedPlayers as string[] ?? []).length;
+    return (
+      <main className="flex flex-1 flex-col items-center justify-center px-4">
+        <h2 className="text-2xl font-bold text-zinc-900 mb-2">Add Your Own Charades</h2>
+        <p className="text-sm text-zinc-500 mb-6">Everyone enters 2 phrases on their phone!</p>
+
+        {!hostPhrasesSubmitted ? (
+          <div className="w-full max-w-xs space-y-3">
+            <Input placeholder="Phrase 1" value={hostPhrase1} onChange={(e) => setHostPhrase1(e.target.value)} />
+            <Input placeholder="Phrase 2" value={hostPhrase2} onChange={(e) => setHostPhrase2(e.target.value)} />
+            <Button className="w-full" onClick={async () => {
+              const phrases = [hostPhrase1.trim(), hostPhrase2.trim()].filter(Boolean);
+              if (phrases.length === 0) return;
+              setHostPhrasesSubmitted(true);
+              const g = gameRef.current;
+              if (!g?.current_round) return;
+              const existing = (g.current_round.data.customPhrases as string[] ?? []);
+              const submitted = (g.current_round.data.submittedPlayers as string[] ?? []);
+              await updateGameRound(g.id, {
+                ...g.current_round,
+                data: {
+                  ...g.current_round.data,
+                  customPhrases: [...existing, ...phrases],
+                  submittedPlayers: [...submitted, hostPlayerId],
+                },
+              });
+            }}>
+              Submit Phrases
+            </Button>
+          </div>
+        ) : (
+          <p className="text-emerald-600 font-semibold mb-4">Your phrases submitted!</p>
+        )}
+
+        <p className="text-xs text-zinc-400 mt-4">{submittedCount} / {players.length} submitted</p>
+
+        {hostPhrasesSubmitted && (
+          <Button className="mt-6" onClick={() => {
+            const allCustom = (game.current_round?.data?.customPhrases as string[]) ?? [];
+            setCustomPhrases(allCustom);
+            setCollectingPhrases(false);
+          }}>
+            Start Game
+          </Button>
+        )}
+      </main>
+    );
+  }
+
   if (game.status === "finished") {
     const winnerName = game.current_round?.data?.winnerName as string ?? "Someone";
     return (
@@ -297,11 +419,13 @@ export default function HostPlayPage() {
     );
   }
 
+  const letEmFly = (game.enabled_categories ?? []).includes("let-em-fly");
   const round = game.current_round;
 
   if (!round || round.phase === "scoreboard") {
     return (
       <main className="flex flex-1 flex-col items-center justify-center px-4">
+        {letEmFly && <FloatingBalls />}
         {notification && (
           <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-lg bg-zinc-900 text-white px-4 py-2 text-sm font-medium shadow-lg animate-fade-in">
             {notification}
@@ -346,8 +470,44 @@ export default function HostPlayPage() {
     onAdvance: handleAdvance,
   };
 
+  const showHostControls = ["staging", "active", "result"].includes(round.phase);
+
+  const showContinue = round.phase === "result" && (() => {
+    if (round.minigame === "scategories") {
+      return round.data.scatPhase === "result" || round.data.wheelOutcome !== undefined;
+    }
+    return true;
+  })();
+
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-4 relative">
+      {letEmFly && <FloatingBalls />}
+
+      {showHostControls && (
+        <div className="fixed top-3 right-3 z-50 flex items-center gap-2">
+          <button
+            onClick={handlePauseToggle}
+            className="flex items-center gap-1 rounded-lg bg-zinc-800 text-white px-3 py-1.5 text-xs font-medium hover:bg-zinc-700 transition-colors"
+          >
+            {paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+            {paused ? "Resume" : "Pause"}
+          </button>
+          <button
+            onClick={handleSkip}
+            className="flex items-center gap-1 rounded-lg bg-zinc-600 text-white px-3 py-1.5 text-xs font-medium hover:bg-zinc-500 transition-colors"
+          >
+            <SkipForward className="h-3.5 w-3.5" />
+            Skip
+          </button>
+        </div>
+      )}
+
+      {paused && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
+          <h1 className="text-5xl font-black text-white tracking-widest">PAUSED</h1>
+        </div>
+      )}
+
       {notification && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-lg bg-zinc-900 text-white px-4 py-2 text-sm font-medium shadow-lg animate-fade-in">
           {notification}
@@ -359,7 +519,7 @@ export default function HostPlayPage() {
       {round.minigame === "scategories" && <Scategories {...minigameProps} gameId={game.id} />}
       {round.minigame === "fifty-fifty" && <FiftyFifty {...minigameProps} />}
 
-      {round.phase === "result" && (round.minigame !== "scategories" || round.data.accepted !== undefined) && (
+      {showContinue && (
         <button
           onClick={handleRoundEnd}
           className="mt-8 rounded-lg bg-emerald-600 px-8 py-3 text-white font-semibold hover:bg-emerald-700 transition-colors"

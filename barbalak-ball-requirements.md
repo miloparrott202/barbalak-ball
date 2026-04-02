@@ -1,6 +1,6 @@
 # Barbalak-Ball — Master Architectural & Functional Specification
 
-> **Version:** 4.0.0  
+> **Version:** 6.1.0  
 > **Status:** Canonical  
 > **Stack:** Next.js (App Router) · Supabase (Realtime + Postgres) · Vercel  
 > **Content Source:** All generated content lives in `content/*.json`. This document defines mechanics only.
@@ -118,7 +118,17 @@ All game content must follow these rules. They apply to trivia, charades, fifty-
 | 3. Countdown | Words appear one at a time on all screens: **"Ready?"** → **"Set?"** → **"BARBALAK!!!"** with extra left margin on "BARBALAK!!!" to prevent overlap when it scales up. | `ding.mp4` on each word |
 | 4. Start | Minigame begins immediately. | — |
 
-### 1.10 Floating Balls Background
+No description popup auto-appears during transitions.
+
+### 1.10 Host Controls (Pause & Skip)
+
+- The host sees a **Pause** button and a **Skip** button in the top-right corner of their play screen.
+- **Pause:** Freezes all timers and displays "PAUSED" overlay on all screens. Host taps again to resume.
+- **Skip:** Immediately ends the current minigame round and advances to the scoreboard. No points awarded for the skipped round.
+- These buttons are **only visible to the host**.
+- All spinning wheels and chance devices must visually land on the actual pre-determined result. The pointer at the top of any wheel must align with the correct segment when the spin completes.
+
+### 1.11 Floating Balls Background
 
 - During every transition/intro screen, ball icons from `public/balls/` float across the background.
 - Balls spawn at random positions outside the viewport edge and drift in a random direction.
@@ -129,152 +139,143 @@ All game content must follow these rules. They apply to trivia, charades, fifty-
 - Multiple copies of the same ball image can appear.
 - Each new transition randomizes density and speed range.
 
+### 1.12 Minigame Descriptions
+
+- Every minigame has a description accessible via an info (ⓘ) button next to the minigame name in settings and on the join waiting screen. Descriptions do NOT auto-popup during transitions.
+
+### 1.13 Session Persistence
+
+- When a player joins a game, their player ID is stored in localStorage keyed by the game's short code.
+- If a player navigates away and returns to the same join URL, they are automatically restored to their existing player session without re-entering their name or icon.
+- This prevents duplicate player entries and avoids disrupting ongoing games.
+
 ---
 
 ## 2. Minigame: Charades
 
+**Description (shown to players):** "Actor will act out a secret word. If someone guesses it correctly, the guesser and actor get to make everyone else drink. If the actor can't hack it, they will finish their drink."
+
 ### 2.1 Pool
 
-- Players can input **custom phrases** on their phones before or during setup. These enter the session pool.
-- The **Default Pool** (`content/charades.json`) is toggleable by the host. When on, defaults mix with customs.
+Charades has two sub-switches on the settings page:
+
+| Sub-switch | Description |
+|---|---|
+| **Default** | Uses the built-in pool (`content/charades.json`). |
+| **Add Your Own** | After the host presses "Begin Barbalak-Ball!", every player is prompted to enter 2 custom phrases. These are stored in-memory for the session only (not persisted to DB). Mixed into the pool alongside defaults if both are enabled. |
+
+- At least one sub-switch must be on.
 - **No-repeat rule:** A phrase cannot be used more than once per game session (standard content exhaustion applies).
 
 ### 2.2 Gameplay
 
-1. Random player selected. Their ball icon + name displayed.
-2. Phrase shown **only** on that player's phone.
-3. Player reads phrase, presses **"Begin"**.
-5. **20-second countdown timer** appears on the main device (visible to all).
-6. `tick.mp4` plays every second.
-7. Group shouts guesses (honor system). Actor or host confirms via Yes/No prompt on actor's device.
+1. Random player selected as actor. Their ball icon + name displayed.
+2. The actor's phrase is hidden during staging. It is only revealed on the actor's screen once they press 'Begin' (i.e., when the active phase starts).
+3. 20-second countdown timer on all screens.
+4. The host device shows "They Got It!" button at any time during the timer. Once timer expires, host sees "No Dice!" button.
+5. **If the host IS the actor:** A random non-host joined player gets the "They Got It!" / "No Dice!" buttons instead.
 
 ### 2.3 Scoring
 
-| Outcome | Points |
+| Outcome | Result |
 |---|---|
-| Guessed correctly | Actor **+5** |
-| Not guessed | Actor drinks |
-| Guessed (everyone else) | Everyone else drinks |
-
-### 2.6 Seed Defaults
-
-> Squeezing out toothpaste at waist level · Shaking salt directly into mouth · Starting a lawnmower · The concept of time · BDSM sex · Gardening
+| Guessed correctly | Actor gets **+10 pts**. All screens show "Everyone but actor and guesser drinks!" |
+| Not guessed | Actor gets **-10 pts**. All screens show "[Actor name] finishes their drink." |
 
 ---
 
 ## 3. Minigame: Trivia
 
+**Description (shown to players):** "Glory and fame for those who answer correctly. Death and despair for those who do not."
+
 ### 3.1 Pool
 
 - All trivia lives in a single unified pool (`content/trivia.json`).
-- Questions span multiple knowledge domains (elementary, American culture, world culture, general academic) but are **not** split into subcategories at runtime.
 
 ### 3.2 Gameplay
 
-- **One player is selected per trivia round.** Their ball icon + name displayed. The selected player answers the questions; everyone else watches.
-- **Questions per round:** 1 question per trivia round.
-- All questions are **multiple choice (4 options)**.
-- **15-second timer** per question.
-- Points at stake are displayed prominently before the question appears (based on difficulty).
+- **Questions per round:** `ceil(Total Players / 2)` (minimum 1).
+- Each question is for ONE randomly selected player. The question appears on ALL screens, but only the selected player can answer.
+- All questions are **multiple choice (4 options)**. **15-second timer** per question.
+- **Difficulty distribution:** Easy 30%, Medium 30%, Hard 30%, Ruinous 10%.
+- **Difficulty visuals:** Easy → flash `happy.png`. Medium → flash `medium.png`. Hard → flash `hard.png`. Ruinous → `ruinous-trivia.gif` pops up and fades linearly over 2 seconds while `ruinous.mp3` plays in full. All assets in `content/images/`.
 
-### 3.3 Difficulty Distribution
+### 3.3 Scoring
 
-| Difficulty | Probability | Points | Visual | Audio |
-|---|---|---|---|---|
-| Easy | 30% | +3 | Flash `happy.png` | — |
-| Medium | 30% | +6 | Flash `medium.png` | — |
-| Hard | 30% | +10 | Flash `hard.png` | — |
-| Ruinous | 10% | +20 | `ruinous-trivia.gif` pops up, fades linearly over 2 seconds | `ruinous.mp3` plays in full |
-
-### 3.4 Answer Presentation Constraint
-
-- **CRITICAL:** When displaying a question, the order of the four answer options **must be randomized** on every player's screen independently. The stored `answer` index refers to the correct option in the JSON's original `options` array — the client must map this correctly after shuffling.
-- This prevents pattern recognition (e.g., "the answer is always C").
+| Outcome | Result |
+|---|---|
+| Correct | **+10 pts**. Player makes someone else drink. |
+| Incorrect | **-5 pts**. Player drinks. 10% chance the message says "Incorrect, take a drink and lose five points, you dumb fucking sack of shit." instead of the normal message. |
 
 ---
 
 ## 4. Minigame: Scategories
 
+**Description (shown to players):** "Player will be given a letter and a category. Five seconds to think of a word and 15 seconds to defend."
+
 ### 4.1 Gameplay
 
-1. Random player selected. Their ball icon + name displayed. Host starts the round.
-2. A **Letter** and a **Category** are displayed on all screens.
-3. The letter is chosen at random from the valid letter pool. The category is chosen at random from the category pool. **They are not pre-paired** — assignment is fully random at runtime.
+1. Random player selected. They press "Play" on their phone.
+   The letter and category are hidden during staging. They are revealed to all screens only after the selected player presses 'Play'.
+2. Letter + Category displayed on all screens.
+3. 5-second countdown — player thinks of a word starting with the letter.
+4. 15-second defend timer — player verbally defends their word.
+5. All other players vote thumbs up (`yes.png`) or thumbs down (`no.png`) on their phones.
+6. All phones show who hasn't voted yet. Votes are private until tallied.
+7. Tie goes to the player.
 
-**Phase 1 — Think (5 seconds):**
-- All phones show a dramatic 5-second countdown.
-- Player thinks of a word starting with the letter that fits the category.
-- **No typing.** The player does NOT enter their answer. They think silently.
+### 4.2 Wheel of Fate
 
-**Phase 2 — Defend (15 seconds):**
-- All screens show **"Defend your answer!"** with a 15-second timer.
-- Player verbally says and defends their word.
-- All **other** players (not the hot-seat player) see a voting screen with thumbs up / thumbs down.
-- Votes are recorded to the `votes` table in real-time.
-- Round ends when **all voters have voted** OR the 15-second timer expires.
-- Players who do not vote by timer expiry **default to thumbs-down** (reject).
+After voting, "[Player name] must now spin the wheel of fate" appears. The wheel is flashy, Vegas-style. The wheel spins for approximately **7 seconds**. The wheel spins on all players' screens simultaneously via game state broadcast.
 
-### 4.2 Letter Pool
+**Success wheel (≥50% yes votes):**
 
-Valid letters (no hard letters): **A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, R, S, T, W**
-
-Excluded: Q, U, V, X, Y, Z.
-
-### 4.3 Voting
-
-- All other players see a private voting screen with thumbs up / thumbs down buttons.
-- Votes are tallied in real-time. UI shows how many have voted.
-- **Tie goes to the player** (50%+ of votes must be thumbs-down to reject).
-- Non-voters at timer expiry default to thumbs-down.
-
-### 4.4 Scoring
-
-| Outcome | Points |
+| Outcome | Weight |
 |---|---|
-| Accepted (majority Yes or tie) | **+5** |
-| Rejected (majority No) | **-5** |
+| Make someone else shotgun | 10% |
+| +10 points | 40% |
+| Hand out a handle pull | 20% |
+| Make someone else finish their drink | 10% |
+| +15 points | 20% |
+
+**Defeat wheel (<50% yes votes):**
+
+| Outcome | Weight |
+|---|---|
+| Shotgun | 10% |
+| -10 points | 40% |
+| Handle pull | 20% |
+| Finish their drink | 10% |
+| -15 points | 20% |
 
 ---
 
 ## 5. Minigame: Fifty Fifty
 
-### 5.1 Sequence (Dramatic Reveal)
+**Description (shown to players):** "Could be good, could be bad. How bad? How good? Who knows…"
 
-1. **Select Player** — random. Ball icon + name displayed.
-2. **Reveal Type** — Slot-machine-style spinning animation rapidly cycles through "PENALTY" / "BONUS" text, then locks in the result. Fast (~1.5s).
-3. **Reveal Rarity** — Same spinning animation, cycles through "Common" / "Rare" / "Legendary", then locks in. Fast (~1.5s).
-4. **Reveal Action** — The action text is displayed.
-   - **Legendary:** Screen flashes green, pulsing glow effect, shaking animation — full "legendary drop" reveal.
-   - **Rare:** Subtle shimmer/glow effect.
-   - **Common:** No special effect.
+### 5.1 Sequence (Vegas slots animation)
 
-### 5.2 Refusal Penalties
+1. Select Player (~3 seconds, Vegas slots style).
+2. Penalty or Reward (50/50).
+3. Rarity: Common (50%), Uncommon (30%), Rare (25%), Legendary (5%).
+4. Display action from the selected rarity/type pool on all screens.
 
-| Rarity | Point Deduction |
-|---|---|
-| Common | -1 |
-| Rare | -2 |
-| Legendary | -15 |
+All content is defined in `content/fifty-fifty.json` and is directly editable.
 
-Negative point totals are allowed.
-
-### 5.3 Pool Constraints
-
-- Legendary: **exactly 2 entries** per type (Penalty and Bonus). No more.
-- Common and Rare: expandable.
-- All actions must be **immediately doable** in a party setting. No actions that depend on other game systems or future game state.
-
-### 5.4 Seed Defaults
+### 5.2 Pools
 
 **Penalties:**
-- Common: 3 big sips · 2 big sips · Nip of the handle
-- Rare: Finish your drink · Handle pull
-- Legendary: Shooey (pour drink into shoe and drink it)
+- Common (50%): "Swig ya drink" · "Take 3 sips of ya drink"
+- Uncommon (30%): "Take 5 sips of ya drink" · "Run outside and scream as loud as you can."
+- Rare (25%): "Finish your drink" · "Roll around on the floor and oink like a pig" · "The people immediately to your left and right are going to punch you. Now! Get him!"
+- Legendary (5%): "Back to back double shotgun"
 
-**Bonuses:**
-- Common: Make someone else drink 2 · Make someone else drink 1
-- Rare: Make everyone drink · Acquire 10 points
-- Legendary: Take anyone's drink (regardless of cost or quality)
+**Rewards:**
+- Common (50%): "Make 2 people drink" · "Make one person drink twice"
+- Uncommon (30%): "Make one person take a handle pull"
+- Rare (25%): "Take anyone's drink and call them a good boy for handing it over."
+- Legendary (5%): "Make another player take a big 'effin swig from the handle. And I do mean big."
 
 ---
 
@@ -290,6 +291,16 @@ Negative point totals are allowed.
 2. After **1.5 seconds**, event text fades in below.
 3. Remains for 6 seconds or until host dismisses.
 4. **No** "this affects everyone for the rest of the game" subtitle — world events are one-time actions.
+
+### 6.3 Settings Display
+
+- World Events, Fun Fact Interjection, and "Let 'em Fly" appear as event toggles in the settings page.
+- **No descriptions** are shown under any event toggle — label only.
+
+### 6.4 "Let 'em Fly" Event
+
+- Toggleable event in settings. When enabled, all ball icons from `public/balls/` fly across the background of every screen during gameplay. Purely cosmetic, does not affect gameplay.
+- Uses the same `FloatingBalls` component but renders on all game screens (not just transitions).
 
 ### 6.3 Tone
 

@@ -105,7 +105,7 @@ export function FloatingBalls() {
           key={b.id}
           src={b.src}
           alt=""
-          className="absolute rounded-full opacity-15"
+          className="absolute rounded-full opacity-40"
           style={{
             left: `${b.x}%`,
             top: `${b.y}%`,

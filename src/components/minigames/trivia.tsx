@@ -1,19 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { shuffleArray } from "@/lib/content";
 import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { SelectedPlayer } from "@/components/selected-player";
 import type { Player, CurrentRound, TriviaQuestion } from "@/lib/types";
-
-const DIFFICULTY_POINTS: Record<string, number> = {
-  easy: 3,
-  medium: 6,
-  hard: 10,
-  ruinous: 20,
-};
 
 interface TriviaProps {
   round: CurrentRound;
@@ -24,19 +17,36 @@ interface TriviaProps {
   onAdvance: (phase: string, extraData?: Record<string, unknown>) => void;
 }
 
+const DIFFICULTY_IMAGES: Record<string, string> = {
+  easy: "/images/happy.png",
+  medium: "/images/medium.png",
+  hard: "/images/hard.png",
+  ruinous: "/images/ruinous-trivia.gif",
+};
+
 export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdvance }: TriviaProps) {
-  const { phase, data, selectedPlayerIds } = round;
-  const selectedId = selectedPlayerIds[0];
+  const { phase, data } = round;
+
+  const questions = (data.questions ?? []) as { question: TriviaQuestion; playerId: string }[];
+  const currentQ = (data.currentQ as number) ?? 0;
+  const totalQuestions = (data.totalQuestions as number) ?? questions.length;
+  const currentEntry = questions[currentQ];
+  const question = currentEntry?.question;
+  const selectedId = currentEntry?.playerId;
   const isSelected = currentPlayerId === selectedId;
   const selectedPlayer = players.find((p) => p.id === selectedId);
-
-  const question = data.questionData as TriviaQuestion;
-  const points = DIFFICULTY_POINTS[question?.difficulty] ?? 0;
 
   const [timer, setTimer] = useState(15);
   const [answered, setAnswered] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
   const [shuffledOptions, setShuffledOptions] = useState<{ text: string; originalIdx: number }[]>([]);
+  const [difficultyFlash, setDifficultyFlash] = useState(false);
+  const [ruinousFading, setRuinousFading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [roastMsg, setRoastMsg] = useState(false);
+  const [resultScores, setResultScores] = useState<{ playerId: string; correct: boolean; roast: boolean }[]>(
+    (data.resultScores as { playerId: string; correct: boolean; roast: boolean }[]) ?? [],
+  );
 
   useEffect(() => {
     if (!question) return;
@@ -45,6 +55,23 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
     setAnswered(false);
     setSelected(null);
     setTimer(15);
+    setRoastMsg(false);
+
+    setDifficultyFlash(true);
+    if (question.difficulty === "ruinous") {
+      setRuinousFading(true);
+      try {
+        const audio = new Audio("/audio/ruinous.mp3");
+        audioRef.current = audio;
+        audio.play().catch(() => {});
+      } catch { /* noop */ }
+      setTimeout(() => setRuinousFading(false), 2000);
+    }
+    const flashTimer = setTimeout(() => setDifficultyFlash(false), question.difficulty === "ruinous" ? 2000 : 1200);
+    return () => {
+      clearTimeout(flashTimer);
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    };
   }, [question]);
 
   useEffect(() => {
@@ -56,7 +83,7 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [phase]);
+  }, [phase, currentQ]);
 
   const submitAnswer = useCallback(
     async (optionOriginalIdx: number) => {
@@ -64,6 +91,7 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
       setAnswered(true);
       setSelected(optionOriginalIdx);
       const isCorrect = optionOriginalIdx === question.answer;
+      if (!isCorrect && Math.random() < 0.1) setRoastMsg(true);
       await getSupabase().from("answers").insert({
         game_id: gameId,
         player_id: currentPlayerId,
@@ -79,24 +107,12 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
         <h2 className="text-2xl font-bold text-zinc-900 mb-2">Trivia</h2>
-        <SelectedPlayer player={selectedPlayer} label="Answering" />
-        <div className="mt-4 mb-6">
-          <span
-            className={cn(
-              "rounded-full px-4 py-1.5 text-sm font-bold uppercase tracking-wider",
-              question?.difficulty === "easy" && "bg-emerald-50 text-emerald-600",
-              question?.difficulty === "medium" && "bg-amber-50 text-amber-600",
-              question?.difficulty === "hard" && "bg-red-50 text-red-600",
-              question?.difficulty === "ruinous" && "bg-zinc-900 text-white",
-            )}
-          >
-            {question?.difficulty}
-          </span>
-          <p className="text-2xl font-black text-zinc-900 mt-3">{points} points at stake</p>
-        </div>
+        <p className="text-sm text-zinc-500 mb-4">
+          {totalQuestions} question{totalQuestions > 1 ? "s" : ""} this round
+        </p>
         {isHost && (
           <Button onClick={() => onAdvance("active")} className="mt-4">
-            Show Question
+            Begin Trivia
           </Button>
         )}
       </div>
@@ -105,33 +121,55 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
 
   if (phase === "active" && question) {
     const showResult = answered || timer === 0;
+    const isCorrect = selected === question.answer;
+
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 relative">
+        {difficultyFlash && (
+          <div className={cn(
+            "fixed inset-0 z-40 flex items-center justify-center pointer-events-none",
+            question.difficulty === "ruinous" ? "" : "bg-black/20",
+          )}>
+            <img
+              src={DIFFICULTY_IMAGES[question.difficulty]}
+              alt={question.difficulty}
+              className={cn(
+                "max-w-[200px] max-h-[200px] object-contain",
+                question.difficulty === "ruinous" && ruinousFading && "transition-opacity duration-[2000ms] ease-linear",
+                question.difficulty === "ruinous" && !ruinousFading && "opacity-0",
+              )}
+            />
+          </div>
+        )}
+
         <div className="w-full max-w-lg">
-          <div className="flex items-center justify-between mb-4">
-            <SelectedPlayer player={selectedPlayer} />
-            <div className="text-right">
-              <span
-                className={cn(
-                  "rounded-full px-2 py-0.5 text-xs font-semibold",
-                  question.difficulty === "easy" && "bg-emerald-50 text-emerald-600",
-                  question.difficulty === "medium" && "bg-amber-50 text-amber-600",
-                  question.difficulty === "hard" && "bg-red-50 text-red-600",
-                  question.difficulty === "ruinous" && "bg-zinc-900 text-white",
-                )}
-              >
-                {points} pts
-              </span>
-            </div>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-zinc-400">
+              Question {currentQ + 1} / {totalQuestions}
+            </p>
+            <span
+              className={cn(
+                "rounded-full px-3 py-0.5 text-xs font-bold uppercase",
+                question.difficulty === "easy" && "bg-emerald-50 text-emerald-600",
+                question.difficulty === "medium" && "bg-amber-50 text-amber-600",
+                question.difficulty === "hard" && "bg-red-50 text-red-600",
+                question.difficulty === "ruinous" && "bg-zinc-900 text-white",
+              )}
+            >
+              {question.difficulty}
+            </span>
           </div>
 
-          <div
-            className={cn(
-              "text-3xl font-black tabular-nums text-right mb-2",
-              timer <= 5 ? "text-red-500" : "text-zinc-300",
-            )}
-          >
-            {timer}
+          <div className="flex items-center justify-between mb-4">
+            <SelectedPlayer player={selectedPlayer} label="Answering" />
+            <div
+              className={cn(
+                "text-3xl font-black tabular-nums",
+                timer <= 5 ? "text-red-500" : "text-zinc-300",
+              )}
+            >
+              {timer}
+            </div>
           </div>
 
           <h3 className="text-lg font-semibold text-zinc-900 mb-5">
@@ -183,19 +221,58 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
 
           {showResult && (
             <div className="mt-4 text-center">
-              {selected === question.answer ? (
-                <p className="text-emerald-600 font-bold">Correct! +{points} pts</p>
+              {isCorrect ? (
+                <div>
+                  <p className="text-emerald-600 font-bold">Correct! +10 pts</p>
+                  <p className="text-sm text-amber-600 mt-1">
+                    {selectedPlayer?.name} makes someone else drink!
+                  </p>
+                </div>
               ) : (
-                <p className="text-red-500 font-bold">
-                  {timer === 0 && !answered ? "Time's up!" : "Wrong!"}
-                </p>
+                <div>
+                  {roastMsg ? (
+                    <p className="text-red-500 font-bold">
+                      Incorrect, take a drink and lose five points, you dumb fucking sack of shit.
+                    </p>
+                  ) : (
+                    <p className="text-red-500 font-bold">
+                      {timer === 0 && !answered ? "Time's up!" : "Incorrect!"} -5 pts. Take a drink.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           )}
 
           {isHost && showResult && (
             <div className="mt-6 flex justify-center">
-              <Button onClick={() => onAdvance("result")}>Continue</Button>
+              <Button onClick={() => {
+                const newScores = [
+                  ...resultScores,
+                  { playerId: selectedId, correct: isCorrect, roast: roastMsg },
+                ];
+                setResultScores(newScores);
+
+                if (currentQ + 1 < totalQuestions) {
+                  onAdvance("active", {
+                    currentQ: currentQ + 1,
+                    resultScores: newScores,
+                    [`q${currentQ}_correct`]: isCorrect,
+                    [`q${currentQ}_playerId`]: selectedId,
+                  });
+                  setTimer(15);
+                  setAnswered(false);
+                  setSelected(null);
+                } else {
+                  onAdvance("result", {
+                    resultScores: newScores,
+                    [`q${currentQ}_correct`]: isCorrect,
+                    [`q${currentQ}_playerId`]: selectedId,
+                  });
+                }
+              }}>
+                {currentQ + 1 < totalQuestions ? "Next Question" : "See Results"}
+              </Button>
             </div>
           )}
         </div>
@@ -204,14 +281,26 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
   }
 
   if (phase === "result") {
-    const correct = (data.correct as boolean) ?? false;
+    const scores = (data.resultScores as { playerId: string; correct: boolean }[]) ?? [];
     return (
       <div className="flex flex-col items-center justify-center px-4 text-center py-8">
-        <h2 className="text-2xl font-bold text-zinc-900 mb-2">Trivia</h2>
-        <SelectedPlayer player={selectedPlayer} />
-        <p className={cn("font-semibold text-lg", correct ? "text-emerald-600" : "text-red-500")}>
-          {correct ? `+${points} pts to ${selectedPlayer?.name}!` : `${selectedPlayer?.name} missed it.`}
-        </p>
+        <h2 className="text-2xl font-bold text-zinc-900 mb-4">Trivia Results</h2>
+        <div className="space-y-3 w-full max-w-sm">
+          {scores.map((s, i) => {
+            const p = players.find((pl) => pl.id === s.playerId);
+            return (
+              <div key={i} className={cn(
+                "flex items-center justify-between rounded-lg border px-4 py-2",
+                s.correct ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50",
+              )}>
+                <span className="text-sm font-medium text-zinc-900">{p?.name ?? "?"}</span>
+                <span className={cn("text-sm font-bold", s.correct ? "text-emerald-600" : "text-red-500")}>
+                  {s.correct ? "+10 pts" : "-5 pts"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   }

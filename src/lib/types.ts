@@ -82,9 +82,18 @@ export interface FiftyFiftyAction {
   action: string;
 }
 
+export type FiftyFiftyRarity = "common" | "uncommon" | "rare" | "legendary";
+
+export interface FiftyFiftyTierPool {
+  common: FiftyFiftyAction[];
+  uncommon: FiftyFiftyAction[];
+  rare: FiftyFiftyAction[];
+  legendary: FiftyFiftyAction[];
+}
+
 export interface FiftyFiftyPool {
-  penalties: { common: FiftyFiftyAction[]; rare: FiftyFiftyAction[]; legendary: FiftyFiftyAction[] };
-  bonuses: { common: FiftyFiftyAction[]; rare: FiftyFiftyAction[]; legendary: FiftyFiftyAction[] };
+  penalties: FiftyFiftyTierPool;
+  rewards: FiftyFiftyTierPool;
 }
 
 export interface WorldEvent {

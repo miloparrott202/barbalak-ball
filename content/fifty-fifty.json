@@ -1,49 +1,35 @@
 {
   "penalties": {
     "common": [
-      { "id": "pc-1",  "action": "3 big sips" },
-      { "id": "pc-2",  "action": "2 big sips" },
-      { "id": "pc-3",  "action": "Nip of the handle" },
-      { "id": "pc-4",  "action": "Drink for 5 seconds straight" },
-      { "id": "pc-6",  "action": "5 big sips. Count them out loud so everyone can hear." },
-      { "id": "pc-8",  "action": "Take a sip and give the person to your left a sincere compliment." },
-      { "id": "pc-9",  "action": "4 sips. Not 3. Not 5. Four." },
-      { "id": "pc-10", "action": "Waterfall: drink until the person to your right tells you to stop" }
+      { "id": "pc-1", "action": "Swig ya drink" },
+      { "id": "pc-2", "action": "Take 3 sips of ya drink" }
+    ],
+    "uncommon": [
+      { "id": "pu-1", "action": "Take 5 sips of ya drink" },
+      { "id": "pu-2", "action": "Run outside and scream as loud as you can." }
     ],
     "rare": [
       { "id": "pr-1", "action": "Finish your drink" },
-      { "id": "pr-2", "action": "Handle pull" },
-      { "id": "pr-3", "action": "Take a shot and immediately chase it with a sip of your drink" },
-      { "id": "pr-4", "action": "Finish your drink and immediately crack a new one" },
-      { "id": "pr-5", "action": "Take a shot of the cheapest liquor in the room" },
-      { "id": "pr-6", "action": "Drink whatever the person to your left hands you. No questions." }
+      { "id": "pr-2", "action": "Roll around on the floor and oink like a pig" },
+      { "id": "pr-3", "action": "The people immediately to your left and right are going to punch you. Now! Get him!" }
     ],
     "legendary": [
-      { "id": "pl-1", "action": "Shooey. Pour your drink into your shoe and drink it. No exceptions." },
-      { "id": "pl-3", "action": "Everyone in the room group-chugs for 10 seconds. You started this." }
+      { "id": "pl-1", "action": "Back to back double shotgun" }
     ]
   },
-  "bonuses": {
+  "rewards": {
     "common": [
-      { "id": "bc-1",  "action": "Make someone else drink 2 sips" },
-      { "id": "bc-2",  "action": "Make someone else drink 1 sip" },
-      { "id": "bc-3",  "action": "Pick someone: they drink 3 sips" },
-      { "id": "bc-5",  "action": "Pick two people: they each drink 2 sips" },
-      { "id": "bc-6",  "action": "Pick someone: they drink for 10 seconds straight. You count." },
-      { "id": "bc-7",  "action": "Make someone take a pull from the handle. Your choice who." },
-      { "id": "bc-10", "action": "Pick any two people: they clink and drink together. 3 sips each." }
+      { "id": "rc-1", "action": "Make 2 people drink" },
+      { "id": "rc-2", "action": "Make one person drink twice" }
+    ],
+    "uncommon": [
+      { "id": "ru-1", "action": "Make one person take a handle pull" }
     ],
     "rare": [
-      { "id": "br-1", "action": "Make everyone else drink 2 sips" },
-      { "id": "br-2", "action": "Pick two people: they each finish their drink" },
-      { "id": "br-3", "action": "Choose someone: they do a shot" },
-      { "id": "br-4", "action": "Pick a player: they must finish their drink" },
-      { "id": "br-5", "action": "Give 5 sips to anyone. Split them up however you want." }
+      { "id": "rr-1", "action": "Take anyone's drink and call them a good boy for handing it over." }
     ],
     "legendary": [
-      { "id": "bl-1", "action": "Take anyone's drink. Regardless of cost or quality. It's yours now." },
-      { "id": "bl-2", "action": "Kingmaker. Pick any player: they immediately gain 20 points." },
-      { "id": "bl-3", "action": "Make someone shotgun. Twice. No mercy." }
+      { "id": "rl-1", "action": "Make another player take a big 'effin swig from the handle. And I do mean big." }
     ]
   }
 }

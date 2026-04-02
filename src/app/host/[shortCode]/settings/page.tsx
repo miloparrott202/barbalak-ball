@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Play, Settings, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, Play, Settings, ChevronDown, ChevronRight, Info } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { categories as allCategories } from "@/lib/content";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { MinigameDescriptionPopup } from "@/components/minigame-description";
+import type { MinigameType } from "@/lib/types";
 
 export default function SettingsPage() {
   const { shortCode } = useParams<{ shortCode: string }>();
@@ -17,6 +19,7 @@ export default function SettingsPage() {
   const [gameId, setGameId] = useState<string | null>(null);
   const [pointThreshold, setPointThreshold] = useState(100);
   const [loading, setLoading] = useState(false);
+  const [descPopup, setDescPopup] = useState<MinigameType | null>(null);
 
   const [enabled, setEnabled] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(allCategories.map((c) => [c.id, c.enabled])),
@@ -99,6 +102,10 @@ export default function SettingsPage() {
 
   return (
     <main className="flex flex-1 flex-col items-center px-4 py-8 sm:py-12">
+      {descPopup && (
+        <MinigameDescriptionPopup minigame={descPopup} onClose={() => setDescPopup(null)} />
+      )}
+
       <div className="w-full max-w-lg space-y-6">
         <div className="text-center">
           <p className="mb-1 text-sm font-medium text-emerald-600 tracking-wide uppercase">
@@ -133,9 +140,16 @@ export default function SettingsPage() {
                         )}
                       </button>
                     )}
-                    <div>
+                    <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-zinc-900">{cat.label}</span>
-                      <p className="text-xs text-zinc-500">{cat.description}</p>
+                      {cat.description && (
+                        <button
+                          onClick={() => setDescPopup(cat.id as MinigameType)}
+                          className="text-zinc-400 hover:text-emerald-600 transition-colors"
+                        >
+                          <Info className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
                   <Switch
@@ -169,10 +183,7 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             {events.map((cat) => (
               <div key={cat.id} className="flex items-center justify-between gap-4">
-                <div>
-                  <span className="text-sm font-medium text-zinc-900">{cat.label}</span>
-                  <p className="text-xs text-zinc-500">{cat.description}</p>
-                </div>
+                <span className="text-sm font-medium text-zinc-900">{cat.label}</span>
                 <Switch
                   checked={enabled[cat.id] ?? false}
                   onCheckedChange={() => toggleCat(cat.id)}
