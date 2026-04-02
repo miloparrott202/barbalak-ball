@@ -277,32 +277,23 @@ Negative point totals are allowed.
 - When a fun fact is scheduled, it takes priority over world events for that inter-round slot.
 - World events can still fire on non-fun-fact rounds (50% chance as usual).
 
-### 7.2 Type Distribution
+### 7.2 Pool
 
-The fun fact pool is split into three equal categories:
+- All fun facts live in a single flat list (`content/fun-facts.json`) with no type categories.
+- Each entry has an `id` and `text`. No type field.
+- Facts are selected at random from the unused pool, subject to content exhaustion rules.
 
-| Type | ~Proportion | Description |
-|---|---|---|
-| `fact` | 1/3 | Real, bizarre, verified facts |
-| `ridiculous` | 1/3 | Statements that sound plausible or profound but are absurd, tautological, or meaninglessly funny |
-| `escher` | 1/3 | True comparative illusions — sentences that parse grammatically and sound factual on first read but are logically meaningless (e.g., "More astronauts have walked on the moon than I have.") |
-
-### 7.3 Display Rotation
-
-- The system cycles through types in a fixed rotation: **fact → ridiculous → escher → fact → ridiculous → escher …**
-- The system tracks FFI display count per session to enforce this.
-
-### 7.4 Visuals
+### 7.3 Visuals
 
 1. **"Fun Fact"** header appears.
 2. Fact text fades in below.
 3. Displayed for 6 seconds or until dismissed.
 
-### 7.5 Seeds
+### 7.4 Seeds
 
-> **Fact:** 35% of the species in the world are beetles.  
-> **Ridiculous:** No head injury is too trivial to ignore.  
-> **Escher:** More people have been to Berlin than I have.
+> Neutron stars are so dense that a teaspoon of their material would weigh about 6 billion tons.  
+> You can fit every other planet in our solar system between the Earth and the Moon.  
+> The inventor of the Pringles can is buried in one.
 
 ---
 
@@ -374,7 +365,7 @@ All generated content lives in `content/`. The requirements doc references mecha
 | `content/scategories.json` | Category pool — simple, board-game-style categories (letters assigned randomly at runtime) |
 | `content/fifty-fifty.json` | Penalty & bonus pools by rarity |
 | `content/world-events.json` | World event text pool |
-| `content/fun-facts.json` | Fun facts: `fact`, `ridiculous`, and `escher` types in equal proportion |
+| `content/fun-facts.json` | Fun facts — flat list, no type categories |
 | `content/shop-items.json` | Point Shop purchasable items |
 | `content/categories.json` | Master registry of all minigames |
 

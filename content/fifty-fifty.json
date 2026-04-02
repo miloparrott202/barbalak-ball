@@ -5,7 +5,7 @@
       { "id": "pc-2",  "action": "2 big sips" },
       { "id": "pc-3",  "action": "Nip of the handle" },
       { "id": "pc-4",  "action": "Drink for 5 seconds straight" },
-      { "id": "pc-6",  "action": "Shotgun the rest of your beer. No beer? 3 sips." },
+      { "id": "pc-6",  "action": "5 big sips. Count them out loud so everyone can hear." },
       { "id": "pc-8",  "action": "Take a sip and give the person to your left a sincere compliment." },
       { "id": "pc-9",  "action": "4 sips. Not 3. Not 5. Four." },
       { "id": "pc-10", "action": "Waterfall: drink until the person to your right tells you to stop" }
@@ -13,7 +13,7 @@
     "rare": [
       { "id": "pr-1", "action": "Finish your drink" },
       { "id": "pr-2", "action": "Handle pull" },
-      { "id": "pr-3", "action": "Make and take a mystery shot from whatever's on the table" },
+      { "id": "pr-3", "action": "Take a shot and immediately chase it with a sip of your drink" },
       { "id": "pr-4", "action": "Finish your drink and immediately crack a new one" },
       { "id": "pr-5", "action": "Take a shot of the cheapest liquor in the room" },
       { "id": "pr-6", "action": "Drink whatever the person to your left hands you. No questions." }
@@ -29,9 +29,9 @@
       { "id": "bc-2",  "action": "Make someone else drink 1 sip" },
       { "id": "bc-3",  "action": "Pick someone: they drink 3 sips" },
       { "id": "bc-5",  "action": "Pick two people: they each drink 2 sips" },
-      { "id": "bc-6",  "action": "You're safe. Sit back and enjoy the show." },
-      { "id": "bc-7",  "action": "Pick someone to compliment you. If they refuse, they drink." },
-      { "id": "bc-10", "action": "Make someone do 10 push-ups or drink 3 sips" }
+      { "id": "bc-6",  "action": "Pick someone: they drink for 10 seconds straight. You count." },
+      { "id": "bc-7",  "action": "Make someone take a pull from the handle. Your choice who." },
+      { "id": "bc-10", "action": "Pick any two people: they clink and drink together. 3 sips each." }
     ],
     "rare": [
       { "id": "br-1", "action": "Make everyone else drink 2 sips" },
@@ -42,7 +42,8 @@
     ],
     "legendary": [
       { "id": "bl-1", "action": "Take anyone's drink. Regardless of cost or quality. It's yours now." },
-      { "id": "bl-2", "action": "Kingmaker. Pick any player: they immediately gain 20 points." }
+      { "id": "bl-2", "action": "Kingmaker. Pick any player: they immediately gain 20 points." },
+      { "id": "bl-3", "action": "Make someone shotgun. Twice. No mercy." }
     ]
   }
 }

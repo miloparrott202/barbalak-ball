@@ -210,7 +210,6 @@ export default function JoinPage() {
         ) : (
           <FunFactCard
             text={round.data.eventText as string}
-            type={(round.data.factType as string) ?? "fact"}
             isHost={false}
             onDismiss={noop}
           />

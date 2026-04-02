@@ -14,14 +14,14 @@
   {
     "id": "te-e2",
     "difficulty": "easy",
-    "question": "How many continents are there?",
+    "question": "What element does the chemical symbol 'Fe' represent?",
     "options": [
-      "7",
-      "5",
-      "6",
-      "8"
+      "Fluorine",
+      "Iron",
+      "Fermium",
+      "Francium"
     ],
-    "answer": 0
+    "answer": 1
   },
   {
     "id": "te-e3",
@@ -38,12 +38,12 @@
   {
     "id": "te-e4",
     "difficulty": "easy",
-    "question": "What gas do humans need to breathe?",
+    "question": "What animal is known for sleeping up to 22 hours a day?",
     "options": [
-      "Nitrogen",
-      "Oxygen",
-      "Helium",
-      "Carbon dioxide"
+      "Sloth",
+      "Koala",
+      "Cat",
+      "Panda"
     ],
     "answer": 1
   },
@@ -98,14 +98,14 @@
   {
     "id": "te-e9",
     "difficulty": "easy",
-    "question": "What is 7 × 8?",
+    "question": "What type of animal is a Komodo dragon?",
     "options": [
-      "58",
-      "56",
-      "54",
-      "64"
+      "Dinosaur",
+      "Amphibian",
+      "Lizard",
+      "Snake"
     ],
-    "answer": 1
+    "answer": 2
   },
   {
     "id": "te-e10",
@@ -134,26 +134,26 @@
   {
     "id": "te-e12",
     "difficulty": "easy",
-    "question": "Which land animal is the tallest?",
+    "question": "How many rings are on the Olympic flag?",
     "options": [
-      "Elephant",
-      "Moose",
-      "Horse",
-      "Giraffe"
+      "4",
+      "6",
+      "7",
+      "5"
     ],
     "answer": 3
   },
   {
     "id": "te-e13",
     "difficulty": "easy",
-    "question": "What do caterpillars turn into?",
+    "question": "What type of animal is a seahorse?",
     "options": [
-      "Beetles",
-      "Butterflies or moths",
-      "Dragonflies",
-      "Moths only"
+      "Crustacean",
+      "Mammal",
+      "Reptile",
+      "Fish"
     ],
-    "answer": 1
+    "answer": 3
   },
   {
     "id": "te-e14",
@@ -170,24 +170,24 @@
   {
     "id": "te-e15",
     "difficulty": "easy",
-    "question": "How many vowels are in the English alphabet?",
+    "question": "What country gifted the Statue of Liberty to the United States?",
     "options": [
-      "6",
-      "4",
-      "5",
-      "7"
+      "England",
+      "Spain",
+      "France",
+      "Italy"
     ],
     "answer": 2
   },
   {
     "id": "te-m1",
     "difficulty": "medium",
-    "question": "What is the powerhouse of the cell?",
+    "question": "What famous ship sank on its maiden voyage in 1912?",
     "options": [
-      "Ribosome",
-      "Mitochondria",
-      "Golgi apparatus",
-      "Nucleus"
+      "Lusitania",
+      "Titanic",
+      "Bismarck",
+      "HMS Hood"
     ],
     "answer": 1
   },
@@ -374,14 +374,14 @@
   {
     "id": "te-h2",
     "difficulty": "hard",
-    "question": "Which is the smallest bone in the human body?",
+    "question": "What year did the Berlin Wall fall?",
     "options": [
-      "Phalanx",
-      "Stapes",
-      "Malleus",
-      "Incus"
+      "1987",
+      "1991",
+      "1989",
+      "1985"
     ],
-    "answer": 1
+    "answer": 2
   },
   {
     "id": "te-h3",
@@ -1814,12 +1814,12 @@
   {
     "id": "tg-e2",
     "difficulty": "easy",
-    "question": "What is H2O?",
+    "question": "What part of the brain is primarily responsible for balance and coordination?",
     "options": [
-      "Water",
-      "Hydrogen peroxide",
-      "Helium oxide",
-      "Hydrochloric acid"
+      "Cerebellum",
+      "Hippocampus",
+      "Frontal lobe",
+      "Medulla"
     ],
     "answer": 0
   },
@@ -1850,14 +1850,14 @@
   {
     "id": "tg-e5",
     "difficulty": "easy",
-    "question": "What organ pumps blood through the body?",
+    "question": "How many bones are in the human hand (approximately)?",
     "options": [
-      "Heart",
-      "Lungs",
-      "Liver",
-      "Brain"
+      "14",
+      "27",
+      "19",
+      "33"
     ],
-    "answer": 0
+    "answer": 1
   },
   {
     "id": "tg-e6",
@@ -1898,12 +1898,12 @@
   {
     "id": "tg-e9",
     "difficulty": "easy",
-    "question": "What does a thermometer measure?",
+    "question": "What type of rock is formed by layers of sediment compressing over time?",
     "options": [
-      "Weight",
-      "Speed",
-      "Temperature",
-      "Humidity"
+      "Igneous",
+      "Metamorphic",
+      "Sedimentary",
+      "Volcanic"
     ],
     "answer": 2
   },
@@ -2222,12 +2222,12 @@
   {
     "id": "tg-h6",
     "difficulty": "hard",
-    "question": "What is the powerhouse organelle of a eukaryotic cell?",
+    "question": "What is the process by which cells divide to produce two identical copies?",
     "options": [
-      "Chloroplast",
-      "Mitochondria",
-      "Ribosome",
-      "Endoplasmic reticulum"
+      "Meiosis",
+      "Mitosis",
+      "Osmosis",
+      "Cytokinesis"
     ],
     "answer": 1
   },

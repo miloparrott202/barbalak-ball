@@ -70,7 +70,6 @@ export interface TriviaQuestion {
 export interface CharadesPhrase {
   id: string;
   phrase: string;
-  difficulty: "normal" | "impossible";
 }
 
 export interface ScategoryEntry {
@@ -95,6 +94,5 @@ export interface WorldEvent {
 
 export interface FunFact {
   id: string;
-  type: "fact" | "ridiculous" | "escher";
   text: string;
 }

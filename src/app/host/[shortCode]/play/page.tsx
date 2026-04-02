@@ -160,6 +160,23 @@ export default function HostPlayPage() {
 
     const enabledIds = g.enabled_categories ?? [];
 
+    if (enabledIds.includes("fun-facts")) {
+      const usedFF = await getUsedContent(g.id, "fun-fact");
+      const ff = rollFunFact(g.round_number, usedFF);
+      if (ff) {
+        await markContentUsed(g.id, "fun-fact", ff.id);
+        await updateGameRound(g.id, {
+          minigame: g.current_round?.minigame ?? "charades",
+          phase: "event",
+          selectedPlayerIds: [],
+          data: { eventType: "fun-fact", eventText: ff.text, eventId: ff.id },
+          startedAt: new Date().toISOString(),
+        });
+        setRoundBusy(false);
+        return;
+      }
+    }
+
     if (enabledIds.includes("world-events")) {
       const usedWE = await getUsedContent(g.id, "world-event");
       const we = rollWorldEvent(usedWE);
@@ -170,24 +187,6 @@ export default function HostPlayPage() {
           phase: "event",
           selectedPlayerIds: [],
           data: { eventType: "world-event", eventText: we.event, eventId: we.id },
-          startedAt: new Date().toISOString(),
-        });
-        setRoundBusy(false);
-        return;
-      }
-    }
-
-    if (enabledIds.includes("fun-facts")) {
-      const usedFF = await getUsedContent(g.id, "fun-fact");
-      const ff = rollFunFact(g.ffi_count, usedFF);
-      if (ff) {
-        await markContentUsed(g.id, "fun-fact", ff.id);
-        await getSupabase().from("games").update({ ffi_count: g.ffi_count + 1 }).eq("id", g.id);
-        await updateGameRound(g.id, {
-          minigame: g.current_round?.minigame ?? "charades",
-          phase: "event",
-          selectedPlayerIds: [],
-          data: { eventType: "fun-fact", eventText: ff.text, factType: ff.type, eventId: ff.id },
           startedAt: new Date().toISOString(),
         });
         setRoundBusy(false);
@@ -208,8 +207,7 @@ export default function HostPlayPage() {
 
       if (phase === "result") {
         if (r.minigame === "charades" && extraData?.success) {
-          const pts = r.data.difficulty === "impossible" ? 20 : 5;
-          await addScore(r.selectedPlayerIds[0], pts);
+          await addScore(r.selectedPlayerIds[0], 5);
           await markContentUsed(g.id, "charades", r.data.phraseId as string);
         }
         if (r.minigame === "trivia" && r.phase !== "result") {
@@ -326,7 +324,6 @@ export default function HostPlayPage() {
     return (
       <FunFactCard
         text={eventText}
-        type={(round.data.factType as string) ?? "fact"}
         isHost
         onDismiss={handleEventDismiss}
       />

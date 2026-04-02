@@ -19,9 +19,6 @@ export function Charades({ round, players, currentPlayerId, isHost, onAdvance }:
   const isActor = currentPlayerId === actorId;
   const actor = players.find((p) => p.id === actorId);
   const phrase = data.phrase as string;
-  const difficulty = data.difficulty as string;
-  const isImpossible = difficulty === "impossible";
-  const pointValue = isImpossible ? 20 : 5;
 
   const [timer, setTimer] = useState(60);
   const [deciding, setDeciding] = useState(false);
@@ -57,16 +54,6 @@ export function Charades({ round, players, currentPlayerId, isHost, onAdvance }:
   if (phase === "staging") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
-        <span
-          className={cn(
-            "rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider mb-3",
-            isImpossible
-              ? "bg-red-50 text-red-600"
-              : "bg-emerald-50 text-emerald-600",
-          )}
-        >
-          {isImpossible ? "IMPOSSIBLE" : "NORMAL"} — {pointValue} pts
-        </span>
         <h2 className="text-2xl font-bold text-zinc-900 mb-2">Charades</h2>
         <p className="text-zinc-500 mb-4">
           <span className="font-semibold text-zinc-700">{actor?.name}</span> is acting.
@@ -102,16 +89,6 @@ export function Charades({ round, players, currentPlayerId, isHost, onAdvance }:
         <p className="text-sm text-zinc-500 mb-1">
           <span className="font-semibold text-zinc-700">{actor?.name}</span> is acting!
         </p>
-        <span
-          className={cn(
-            "rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider",
-            isImpossible
-              ? "bg-red-50 text-red-600"
-              : "bg-emerald-50 text-emerald-600",
-          )}
-        >
-          {isImpossible ? "IMPOSSIBLE" : "NORMAL"} — {pointValue} pts
-        </span>
 
         {isActor && (
           <div className="mt-6 p-4 rounded-xl bg-zinc-50 border border-zinc-200">
@@ -151,7 +128,7 @@ export function Charades({ round, players, currentPlayerId, isHost, onAdvance }:
         </p>
         {success && (
           <p className="text-emerald-600 font-semibold">
-            +{pointValue} pts to {actor?.name}
+            +5 pts to {actor?.name}
           </p>
         )}
       </div>

@@ -50,7 +50,7 @@ export function buildCharadesRound(selectedPlayer: Player, usedIds: string[]): C
     minigame: "charades",
     phase: "transition",
     selectedPlayerIds: [selectedPlayer.id],
-    data: { phraseId: phrase.id, phrase: phrase.phrase, difficulty: phrase.difficulty },
+    data: { phraseId: phrase.id, phrase: phrase.phrase },
     startedAt: new Date().toISOString(),
   };
 }
@@ -149,15 +149,13 @@ export function rollWorldEvent(usedIds: string[]): { id: string; event: string }
   return pickRandom(pool);
 }
 
-export function rollFunFact(ffiCount: number, usedIds: string[]): { id: string; text: string; type: string } | null {
-  if (Math.random() > 0.4) return null;
-  const rotation = ["fact", "ridiculous", "escher"] as const;
-  const requiredType = rotation[ffiCount % 3];
-  const available = funFacts.filter((f) => f.type === requiredType && !usedIds.includes(f.id));
-  const pool = available.length > 0 ? available : funFacts.filter((f) => f.type === requiredType);
+export function rollFunFact(roundNumber: number, usedIds: string[]): { id: string; text: string } | null {
+  if (roundNumber === 0 || roundNumber % 3 !== 0) return null;
+  const available = funFacts.filter((f) => !usedIds.includes(f.id));
+  const pool = available.length > 0 ? available : funFacts;
   if (pool.length === 0) return null;
   const fact = pickRandom(pool);
-  return { id: fact.id, text: fact.text, type: fact.type };
+  return { id: fact.id, text: fact.text };
 }
 
 export async function updateGameRound(gameId: string, round: CurrentRound | null) {
