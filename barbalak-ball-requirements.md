@@ -49,18 +49,27 @@
 - **Top-right:** Player's current point total.
 - **Between minigames:** Full scoreboard — all players sorted descending by points. Displayed for 4 seconds.
 
-### 1.5 Content Exhaustion
+### 1.5 Branding & Lobby
+
+| Element | Requirement |
+|---|---|
+| **Logo** | `public/logo.png` is the game logo. Used on the landing page and anywhere branding appears. Served as a Next.js `<Image>` component. Source file: `content/images/logo.png` → copied to `public/logo.png`. |
+| **Join Link** | The lobby page does **not** display the raw URL. Instead it shows only a compact "Copy Link" button. The full URL is copied to clipboard on click. |
+| **QR Code** | Encodes the **canonical public URL** for the join page (`/join/{shortCode}`). Uses the `NEXT_PUBLIC_APP_URL` env var when set (production), falls back to `window.location.origin` (dev). This avoids Vercel preview-deployment auth walls. |
+| **App URL env var** | `NEXT_PUBLIC_APP_URL` — set in Vercel to the production domain (e.g. `https://barbalak-ball.vercel.app`). When absent, the app falls back to `window.location.origin`. |
+
+### 1.6 Content Exhaustion
 
 - Once a content item is used in a session, it is removed from the pool for the rest of the session.
 - If an entire pool is exhausted, it resets. A brief "Pool refreshed" indicator appears.
 
-### 1.6 Flow
+### 1.7 Flow
 
 - Minigames are selected **at random** from enabled minigames.
 - Participant(s) for each minigame are selected **at random**.
 - Transitions must be seamless. No loading screens, no dead air.
 
-### 1.7 Content Quality Guidelines
+### 1.8 Content Quality Guidelines
 
 All game content must follow these rules. They apply to trivia, charades, fifty-fifty, world events, fun facts, and scategories.
 
@@ -92,7 +101,7 @@ All game content must follow these rules. They apply to trivia, charades, fifty-
 | Direct drinking consequences | Sips, shots, finishes — no point manipulation or future-state dependencies |
 | Universally playable | No actions requiring specific props, locations, or equipment beyond drinks |
 
-### 1.8 Transition Sequence (Every Minigame)
+### 1.9 Transition Sequence (Every Minigame)
 
 | Step | What Happens | Audio |
 |---|---|---|

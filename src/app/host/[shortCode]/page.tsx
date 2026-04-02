@@ -18,11 +18,12 @@ export default function HostLobbyPage() {
   const [gameId, setGameId] = useState<string | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [proceeding, setProceeding] = useState(false);
+  const [joinUrl, setJoinUrl] = useState("");
 
-  const joinUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/join/${shortCode}`
-      : "";
+  useEffect(() => {
+    const base = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    setJoinUrl(`${base}/join/${shortCode}`);
+  }, [shortCode]);
 
   useEffect(() => {
     async function fetchGame() {
