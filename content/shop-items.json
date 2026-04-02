@@ -3,14 +3,14 @@
     "id": "shop-shotgun",
     "name": "Hope You're Thirsty",
     "description": "Make someone else shotgun a beer.",
-    "cost": 12,
+    "cost": 20,
     "requiresTarget": true
   },
   {
     "id": "shop-sniper",
     "name": "Sniper",
     "description": "Force someone to take 3 big sips.",
-    "cost": 6,
+    "cost": 5,
     "requiresTarget": true
   },
   {
@@ -19,12 +19,5 @@
     "description": "Steal 5 points from any player.",
     "cost": 10,
     "requiresTarget": true
-  },
-  {
-    "id": "shop-everybody",
-    "name": "Social Sacrifice",
-    "description": "Everyone else drinks 2 sips. Leadership has a price.",
-    "cost": 8,
-    "requiresTarget": false
   }
 ]

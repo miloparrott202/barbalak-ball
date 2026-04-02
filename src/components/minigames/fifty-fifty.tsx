@@ -4,6 +4,8 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SelectedPlayer } from "@/components/selected-player";
+import { MinigameDescriptionPopup } from "@/components/minigame-description";
+import { Info } from "lucide-react";
 import type { Player, CurrentRound } from "@/lib/types";
 
 interface FiftyFiftyProps {
@@ -245,10 +247,20 @@ export function FiftyFifty({ round, players, currentPlayerId, isHost, onAdvance 
     }
   }, [phase, revealStep]);
 
+  const [showRulesPopup, setShowRulesPopup] = useState(false);
+
   if (phase === "staging") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
-        <h2 className="text-2xl font-bold text-zinc-900 mb-2">50 / 50</h2>
+        <div className="flex items-center gap-2 mb-2">
+          <h2 className="text-2xl font-bold text-zinc-900">50 / 50</h2>
+          <button onClick={() => setShowRulesPopup(true)} className="text-zinc-400 hover:text-zinc-600 transition-colors">
+            <Info className="h-5 w-5" />
+          </button>
+        </div>
+        {showRulesPopup && (
+          <MinigameDescriptionPopup minigame="fifty-fifty" onClose={() => setShowRulesPopup(false)} />
+        )}
         <p className="text-sm text-zinc-400 mt-2 mb-6">Could be good, could be bad. Who knows&hellip;</p>
         {(isHost) && (
           <Button onClick={handleFlip} className="mt-2" size="lg">

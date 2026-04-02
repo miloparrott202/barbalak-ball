@@ -6,7 +6,9 @@ import { shuffleArray } from "@/lib/content";
 import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { SelectedPlayer } from "@/components/selected-player";
+import { MinigameDescriptionPopup } from "@/components/minigame-description";
 import type { Player, CurrentRound, TriviaQuestion } from "@/lib/types";
+import { Info } from "lucide-react";
 
 interface TriviaProps {
   round: CurrentRound;
@@ -23,6 +25,108 @@ const DIFFICULTY_IMAGES: Record<string, string> = {
   hard: "/images/hard.png",
   ruinous: "/images/ruinous-trivia.gif",
 };
+
+const DIFFICULTY_WHEEL_SEGMENTS = [
+  { label: "Easy", weight: 30, color: "#22c55e" },
+  { label: "Medium", weight: 30, color: "#f59e0b" },
+  { label: "Hard", weight: 30, color: "#ef4444" },
+  { label: "Ruinous", weight: 10, color: "#18181b" },
+];
+
+function DifficultyWheel({
+  targetDifficulty,
+  onDone,
+}: {
+  targetDifficulty: string;
+  onDone: () => void;
+}) {
+  const [rotation, setRotation] = useState(0);
+  const [landed, setLanded] = useState(false);
+
+  useEffect(() => {
+    const segments = DIFFICULTY_WHEEL_SEGMENTS;
+    const totalWeight = segments.reduce((s, seg) => s + seg.weight, 0);
+    const targetIdx = segments.findIndex(
+      (s) => s.label.toLowerCase() === targetDifficulty.toLowerCase(),
+    );
+    let cumDeg = 0;
+    for (let i = 0; i < targetIdx; i++) {
+      cumDeg += (segments[i].weight / totalWeight) * 360;
+    }
+    const segDeg = (segments[targetIdx].weight / totalWeight) * 360;
+    const targetDeg = cumDeg + segDeg / 2;
+    const finalRot = 360 * 8 + ((270 - targetDeg + 360) % 360);
+    setRotation(finalRot);
+
+    const timer = setTimeout(() => {
+      setLanded(true);
+      setTimeout(onDone, 600);
+    }, 4200);
+    return () => clearTimeout(timer);
+  }, [targetDifficulty, onDone]);
+
+  const totalWeight = DIFFICULTY_WHEEL_SEGMENTS.reduce((s, seg) => s + seg.weight, 0);
+  let startAngle = 0;
+  const paths = DIFFICULTY_WHEEL_SEGMENTS.map((seg) => {
+    const angle = (seg.weight / totalWeight) * 360;
+    const endAngle = startAngle + angle;
+    const largeArc = angle > 180 ? 1 : 0;
+    const r = 100;
+    const cx = 120, cy = 120;
+    const x1 = cx + r * Math.cos((Math.PI / 180) * startAngle);
+    const y1 = cy + r * Math.sin((Math.PI / 180) * startAngle);
+    const x2 = cx + r * Math.cos((Math.PI / 180) * endAngle);
+    const y2 = cy + r * Math.sin((Math.PI / 180) * endAngle);
+    const labelAngle = startAngle + angle / 2;
+    const lx = cx + 60 * Math.cos((Math.PI / 180) * labelAngle);
+    const ly = cy + 60 * Math.sin((Math.PI / 180) * labelAngle);
+    const d = `M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc},1 ${x2},${y2} Z`;
+    startAngle = endAngle;
+    return { d, color: seg.color, label: seg.label, lx, ly, labelAngle };
+  });
+
+  return (
+    <div className="relative w-60 h-60 mx-auto my-4">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-10 text-yellow-400 text-2xl drop-shadow-lg">
+        ▼
+      </div>
+      <svg
+        viewBox="0 0 240 240"
+        className="w-full h-full drop-shadow-xl"
+        style={{
+          transform: `rotate(${rotation}deg)`,
+          transition: "transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)",
+        }}
+      >
+        {paths.map((p) => (
+          <g key={p.label}>
+            <path d={p.d} fill={p.color} stroke="#fbbf24" strokeWidth="2" />
+            <text
+              x={p.lx}
+              y={p.ly}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fill="white"
+              fontSize="11"
+              fontWeight="bold"
+              transform={`rotate(${p.labelAngle}, ${p.lx}, ${p.ly})`}
+            >
+              {p.label}
+            </text>
+          </g>
+        ))}
+        <circle cx="120" cy="120" r="16" fill="#1e293b" stroke="#fbbf24" strokeWidth="2" />
+      </svg>
+      {landed && (
+        <div className="absolute inset-0 flex items-center justify-center z-20">
+          <div className="bg-white/95 rounded-xl px-5 py-2 shadow-2xl border-2 border-yellow-400 text-center">
+            <p className="text-lg font-black text-zinc-900 capitalize">{targetDifficulty}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdvance }: TriviaProps) {
   const { phase, data } = round;
@@ -47,6 +151,9 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
   const [resultScores, setResultScores] = useState<{ playerId: string; correct: boolean; roast: boolean }[]>(
     (data.resultScores as { playerId: string; correct: boolean; roast: boolean }[]) ?? [],
   );
+  const [showDifficultyWheel, setShowDifficultyWheel] = useState(false);
+  const [showRulesPopup, setShowRulesPopup] = useState(false);
+  const timerIntervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
   useEffect(() => {
     if (!question) return;
@@ -56,6 +163,13 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
     setSelected(null);
     setTimer(15);
     setRoastMsg(false);
+
+    setShowDifficultyWheel(true);
+  }, [question]);
+
+  const handleDifficultyWheelDone = useCallback(() => {
+    if (!question) return;
+    setShowDifficultyWheel(false);
 
     setDifficultyFlash(true);
     if (question.difficulty === "ruinous") {
@@ -75,15 +189,25 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
   }, [question]);
 
   useEffect(() => {
-    if (phase !== "active") return;
+    if (phase !== "active" || showDifficultyWheel) return;
+    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     const interval = setInterval(() => {
       setTimer((t) => {
         if (t <= 1) { clearInterval(interval); return 0; }
         return t - 1;
       });
     }, 1000);
+    timerIntervalRef.current = interval;
     return () => clearInterval(interval);
-  }, [phase, currentQ]);
+  }, [phase, currentQ, showDifficultyWheel]);
+
+  useEffect(() => {
+    if (answered && timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = undefined;
+      setTimer(0);
+    }
+  }, [answered]);
 
   const submitAnswer = useCallback(
     async (optionOriginalIdx: number) => {
@@ -106,7 +230,19 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
   if (phase === "staging") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
-        <h2 className="text-2xl font-bold text-zinc-900 mb-2">Trivia</h2>
+        <div className="flex items-center gap-2 mb-2">
+          <h2 className="text-2xl font-bold text-zinc-900">Trivia</h2>
+          <button onClick={() => setShowRulesPopup(true)} className="text-zinc-400 hover:text-zinc-600 transition-colors">
+            <Info className="h-5 w-5" />
+          </button>
+        </div>
+        {showRulesPopup && (
+          <MinigameDescriptionPopup
+            name="Trivia"
+            description="A difficulty wheel spins for each question. The selected player must answer before time runs out. +10 pts for correct, -5 pts for incorrect. Correct answers let you make someone drink!"
+            onClose={() => setShowRulesPopup(false)}
+          />
+        )}
         <p className="text-sm text-zinc-500 mb-4">
           {totalQuestions} question{totalQuestions > 1 ? "s" : ""} this round
         </p>
@@ -120,6 +256,19 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
   }
 
   if (phase === "active" && question) {
+    if (showDifficultyWheel) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
+          <p className="text-xs tracking-widest uppercase text-zinc-400 mb-2">Spinning for difficulty...</p>
+          <SelectedPlayer player={selectedPlayer} label="Up Next" />
+          <DifficultyWheel
+            targetDifficulty={question.difficulty}
+            onDone={handleDifficultyWheelDone}
+          />
+        </div>
+      );
+    }
+
     const showResult = answered || timer === 0;
     const isCorrect = selected === question.answer;
 

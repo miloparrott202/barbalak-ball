@@ -1,6 +1,6 @@
 # Barbalak-Ball — Master Architectural & Functional Specification
 
-> **Version:** 6.1.0  
+> **Version:** 6.2.0  
 > **Status:** Canonical  
 > **Stack:** Next.js (App Router) · Supabase (Realtime + Postgres) · Vercel  
 > **Content Source:** All generated content lives in `content/*.json`. This document defines mechanics only.
@@ -73,7 +73,7 @@
 
 ### 1.7 Flow
 
-- Minigames are selected **at random** from enabled minigames.
+- Minigames are selected **uniformly at random** from the set of enabled minigames (equal probability for each).
 - Participant(s) for each minigame are selected **at random**.
 - Transitions must be seamless. No loading screens, no dead air.
 
@@ -120,13 +120,18 @@ All game content must follow these rules. They apply to trivia, charades, fifty-
 
 No description popup auto-appears during transitions.
 
-### 1.10 Host Controls (Pause & Skip)
+### 1.10 Host Controls (Pause, Skip & Kick)
 
-- The host sees a **Pause** button and a **Skip** button in the top-right corner of their play screen.
+- The host sees a **Pause** button, a **Skip** button, and a **Kick** button in the top-right corner of their play screen.
 - **Pause:** Freezes all timers and displays "PAUSED" overlay on all screens. Host taps again to resume.
 - **Skip:** Immediately ends the current minigame round and advances to the scoreboard. No points awarded for the skipped round.
+- **Kick:** Opens a dropdown of non-host players. Selecting a player removes them from the game entirely. Their points are forfeit (reset to 0) and their row is deleted from the `players` table.
 - These buttons are **only visible to the host**.
 - All spinning wheels and chance devices must visually land on the actual pre-determined result. The pointer at the top of any wheel must align with the correct segment when the spin completes.
+
+### 1.10.1 Host HUD
+
+- The host sees the same HUD bar (name + point total + shop access) as joined players. This bar renders at the top of the host play page using the same `<Hud>` component.
 
 ### 1.11 Floating Balls Background
 
@@ -141,7 +146,7 @@ No description popup auto-appears during transitions.
 
 ### 1.12 Minigame Descriptions
 
-- Every minigame has a description accessible via an info (ⓘ) button next to the minigame name in settings and on the join waiting screen. Descriptions do NOT auto-popup during transitions.
+- Every minigame has a description accessible via an info (ⓘ) button next to the minigame name in settings, on the join waiting screen, and on the **staging screen** (before the player hits Play/Begin). Descriptions do NOT auto-popup during transitions.
 
 ### 1.13 Session Persistence
 
@@ -198,14 +203,16 @@ Charades has two sub-switches on the settings page:
 - Each question is for ONE randomly selected player. The question appears on ALL screens, but only the selected player can answer.
 - All questions are **multiple choice (4 options)**. **15-second timer** per question.
 - **Difficulty distribution:** Easy 30%, Medium 30%, Hard 30%, Ruinous 10%.
-- **Difficulty visuals:** Easy → flash `happy.png`. Medium → flash `medium.png`. Hard → flash `hard.png`. Ruinous → `ruinous-trivia.gif` pops up and fades linearly over 2 seconds while `ruinous.mp3` plays in full. All assets in `content/images/`.
+- **Difficulty reveal:** Before each question, a **spinning wheel** with four segments (Easy 30%, Medium 30%, Hard 30%, Ruinous 10%) spins for ~4 seconds and visually lands on the pre-determined difficulty. The wheel must align with the actual difficulty of the question.
+- **Difficulty visuals (after wheel):** Easy → flash `happy.png`. Medium → flash `medium.png`. Hard → flash `hard.png`. Ruinous → `ruinous-trivia.gif` pops up and fades linearly over 2 seconds while `ruinous.mp3` plays in full. All assets in `content/images/`.
+- **Timer stops on answer:** As soon as a player submits their answer (correct or incorrect), the timer immediately stops at 0.
 
 ### 3.3 Scoring
 
 | Outcome | Result |
 |---|---|
-| Correct | **+10 pts**. Player makes someone else drink. |
-| Incorrect | **-5 pts**. Player drinks. 10% chance the message says "Incorrect, take a drink and lose five points, you dumb fucking sack of shit." instead of the normal message. |
+| Correct | **+10 pts**. Player makes someone else drink. Points awarded **exactly once** (guarded by `triviaScored` flag). |
+| Incorrect | **-5 pts**. Player drinks. Points deducted **exactly once**. 10% chance the message says "Incorrect, take a drink and lose five points, you dumb fucking sack of shit." instead of the normal message. |
 
 ---
 
@@ -220,13 +227,13 @@ Charades has two sub-switches on the settings page:
 2. Letter + Category displayed on all screens.
 3. 5-second countdown — player thinks of a word starting with the letter.
 4. 15-second defend timer — player verbally defends their word.
-5. All other players vote thumbs up (`yes.png`) or thumbs down (`no.png`) on their phones.
+5. All other players vote thumbs up (`yes.png`) or thumbs down (`no.png`) on their phones. Votes are synced in real-time via Supabase INSERT subscription + 1-second polling fallback. As soon as all votes are cast, the timer stops immediately.
 6. All phones show who hasn't voted yet. Votes are private until tallied.
 7. Tie goes to the player.
 
 ### 4.2 Wheel of Fate
 
-After voting, "[Player name] must now spin the wheel of fate" appears. The wheel is flashy, Vegas-style. The wheel spins for approximately **7 seconds**. The wheel spins on all players' screens simultaneously via game state broadcast.
+After voting, "[Player name] must now spin the wheel of fate" appears. The wheel is flashy, Vegas-style. The wheel spins for approximately **7 seconds**. The wheel spins on all players' screens simultaneously — the host writes `scatPhase: "wheel"` to game state, and every client independently renders the same `WheelOfFate` component with the same target outcome, ensuring synchronized animation. The main `phase` stays as `"active"` during wheel and result sub-phases; only `data.scatPhase` changes. Scoring is guarded by a `scatScored` flag to prevent double-awarding.
 
 **Success wheel (≥50% yes votes):**
 
@@ -283,7 +290,7 @@ All content is defined in `content/fifty-fifty.json` and is directly editable.
 
 ### 6.1 Trigger
 
-- **50% chance** to fire between any two minigames (evaluated after the inter-minigame scoreboard).
+- Between any two minigames, **exactly one** inter-round event fires: either a World Event (50%) or a Fun Fact (50%) — chosen with equal probability. If one type is disabled or exhausted, the other type fires at 50% chance (the remaining 50% = no event).
 
 ### 6.2 Visuals
 
@@ -321,9 +328,7 @@ All content is defined in `content/fifty-fifty.json` and is directly editable.
 ### 7.1 Trigger
 
 - Toggleable by host.
-- Fires **deterministically every 3rd minigame** (i.e., after minigames 3, 6, 9, …). Uses `round_number % 3 === 0`.
-- When a fun fact is scheduled, it takes priority over world events for that inter-round slot.
-- World events can still fire on non-fun-fact rounds (50% chance as usual).
+- Fun facts share the inter-round event slot with world events. When both are enabled, there is a 50/50 coin flip each round to decide which type fires. See §6.1 for full trigger logic.
 
 ### 7.2 Pool
 
@@ -363,7 +368,15 @@ All content is defined in `content/fifty-fifty.json` and is directly editable.
 
 ### 8.3 Item Pool
 
-Items are defined in `content/shop-items.json`. See Content File Map.
+Items are defined in `content/shop-items.json`. Current items:
+
+| Item | Cost | Target? |
+|---|---|---|
+| Hope You're Thirsty (shotgun) | 20 pts | Yes |
+| Sniper (3 big sips) | 5 pts | Yes |
+| Point Heist (steal 5 pts) | 10 pts | Yes |
+
+"Social Sacrifice" has been removed.
 
 ### 8.4 Visual
 

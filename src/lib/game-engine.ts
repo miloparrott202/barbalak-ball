@@ -153,19 +153,61 @@ export function buildFiftyFiftyRound(players: Player[]): CurrentRound {
 }
 
 export function rollWorldEvent(usedIds: string[]): { id: string; event: string } | null {
-  if (Math.random() > 0.5) return null;
   const available = worldEvents.filter((e) => !usedIds.includes(e.id));
   const pool = available.length > 0 ? available : worldEvents;
+  if (pool.length === 0) return null;
   return pickRandom(pool);
 }
 
-export function rollFunFact(roundNumber: number, usedIds: string[]): { id: string; text: string } | null {
-  if (roundNumber === 0 || roundNumber % 3 !== 0) return null;
+export function rollFunFact(usedIds: string[]): { id: string; text: string } | null {
   const available = funFacts.filter((f) => !usedIds.includes(f.id));
   const pool = available.length > 0 ? available : funFacts;
   if (pool.length === 0) return null;
   const fact = pickRandom(pool);
   return { id: fact.id, text: fact.text };
+}
+
+export function rollInterRoundEvent(
+  enabledIds: string[],
+  usedWEIds: string[],
+  usedFFIds: string[],
+): { type: "world-event"; id: string; text: string } | { type: "fun-fact"; id: string; text: string } | null {
+  const weEnabled = enabledIds.includes("world-events");
+  const ffEnabled = enabledIds.includes("fun-facts");
+  if (!weEnabled && !ffEnabled) return null;
+
+  if (weEnabled && ffEnabled) {
+    if (Math.random() < 0.5) {
+      const we = rollWorldEvent(usedWEIds);
+      if (we) return { type: "world-event", id: we.id, text: we.event };
+      const ff = rollFunFact(usedFFIds);
+      if (ff) return { type: "fun-fact", id: ff.id, text: ff.text };
+    } else {
+      const ff = rollFunFact(usedFFIds);
+      if (ff) return { type: "fun-fact", id: ff.id, text: ff.text };
+      const we = rollWorldEvent(usedWEIds);
+      if (we) return { type: "world-event", id: we.id, text: we.event };
+    }
+    return null;
+  }
+
+  if (weEnabled) {
+    if (Math.random() < 0.5) {
+      const we = rollWorldEvent(usedWEIds);
+      if (we) return { type: "world-event", id: we.id, text: we.event };
+    }
+    return null;
+  }
+
+  if (ffEnabled) {
+    if (Math.random() < 0.5) {
+      const ff = rollFunFact(usedFFIds);
+      if (ff) return { type: "fun-fact", id: ff.id, text: ff.text };
+    }
+    return null;
+  }
+
+  return null;
 }
 
 export async function updateGameRound(gameId: string, round: CurrentRound | null) {

@@ -11,13 +11,16 @@ const MINIGAME_DESCRIPTIONS: Record<MinigameType, string> = {
   "fifty-fifty": categories.find((c) => c.id === "fifty-fifty")?.description ?? "",
 };
 
-interface MinigameDescriptionPopupProps {
-  minigame: MinigameType;
-  onClose: () => void;
-}
+type MinigameDescriptionPopupProps =
+  | { minigame: MinigameType; onClose: () => void; name?: never; description?: never }
+  | { name: string; description: string; onClose: () => void; minigame?: never };
 
-export function MinigameDescriptionPopup({ minigame, onClose }: MinigameDescriptionPopupProps) {
-  const description = MINIGAME_DESCRIPTIONS[minigame];
+export function MinigameDescriptionPopup(props: MinigameDescriptionPopupProps) {
+  const { onClose } = props;
+  const description = props.minigame
+    ? MINIGAME_DESCRIPTIONS[props.minigame]
+    : props.description;
+
   if (!description) return null;
 
   return (

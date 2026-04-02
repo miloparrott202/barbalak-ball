@@ -10,8 +10,7 @@ import {
   buildTriviaRound,
   buildScategoriesRound,
   buildFiftyFiftyRound,
-  rollWorldEvent,
-  rollFunFact,
+  rollInterRoundEvent,
   updateGameRound,
   addScore,
   markContentUsed,
@@ -22,9 +21,10 @@ import { shopItems } from "@/lib/content";
 
 import type { Game, Player, CurrentRound, TriviaQuestion } from "@/lib/types";
 
-import { Pause, Play, SkipForward } from "lucide-react";
+import { Pause, Play, SkipForward, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Hud } from "@/components/hud";
 import { Scoreboard } from "@/components/scoreboard";
 import { Transition } from "@/components/transition";
 import { FloatingBalls } from "@/components/floating-balls";
@@ -49,6 +49,7 @@ export default function HostPlayPage() {
   const [hostPhrase1, setHostPhrase1] = useState("");
   const [hostPhrase2, setHostPhrase2] = useState("");
   const [hostPhrasesSubmitted, setHostPhrasesSubmitted] = useState(false);
+  const [kickMenuOpen, setKickMenuOpen] = useState(false);
   const notifTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const gameRef = useRef<Game | null>(null);
@@ -198,39 +199,25 @@ export default function HostPlayPage() {
     }
 
     const enabledIds = g.enabled_categories ?? [];
+    const usedWE = await getUsedContent(g.id, "world-event");
+    const usedFF = await getUsedContent(g.id, "fun-fact");
+    const event = rollInterRoundEvent(enabledIds, usedWE, usedFF);
 
-    if (enabledIds.includes("fun-facts")) {
-      const usedFF = await getUsedContent(g.id, "fun-fact");
-      const ff = rollFunFact(g.round_number, usedFF);
-      if (ff) {
-        await markContentUsed(g.id, "fun-fact", ff.id);
-        await updateGameRound(g.id, {
-          minigame: g.current_round?.minigame ?? "charades",
-          phase: "event",
-          selectedPlayerIds: [],
-          data: { eventType: "fun-fact", eventText: ff.text, eventId: ff.id },
-          startedAt: new Date().toISOString(),
-        });
-        setRoundBusy(false);
-        return;
-      }
-    }
-
-    if (enabledIds.includes("world-events")) {
-      const usedWE = await getUsedContent(g.id, "world-event");
-      const we = rollWorldEvent(usedWE);
-      if (we) {
-        await markContentUsed(g.id, "world-event", we.id);
-        await updateGameRound(g.id, {
-          minigame: g.current_round?.minigame ?? "charades",
-          phase: "event",
-          selectedPlayerIds: [],
-          data: { eventType: "world-event", eventText: we.event, eventId: we.id },
-          startedAt: new Date().toISOString(),
-        });
-        setRoundBusy(false);
-        return;
-      }
+    if (event) {
+      await markContentUsed(g.id, event.type, event.id);
+      await updateGameRound(g.id, {
+        minigame: g.current_round?.minigame ?? "charades",
+        phase: "event",
+        selectedPlayerIds: [],
+        data: {
+          eventType: event.type,
+          eventText: event.text,
+          eventId: event.id,
+        },
+        startedAt: new Date().toISOString(),
+      });
+      setRoundBusy(false);
+      return;
     }
 
     await startMinigame();
@@ -244,43 +231,43 @@ export default function HostPlayPage() {
       const r = g.current_round;
       const updatedData: Record<string, unknown> = extraData ? { ...r.data, ...extraData } : { ...r.data };
 
-      if (phase === "result") {
-        if (r.minigame === "charades") {
-          const success = extraData?.success ?? updatedData.success;
-          const actorId = r.selectedPlayerIds[0];
-          if (success) {
-            await addScore(actorId, 10);
-          } else {
-            await addScore(actorId, -10);
-          }
-          await markContentUsed(g.id, "charades", r.data.phraseId as string);
+      if (r.minigame === "charades" && phase === "result") {
+        const success = extraData?.success ?? updatedData.success;
+        const actorId = r.selectedPlayerIds[0];
+        if (success) {
+          await addScore(actorId, 10);
+        } else {
+          await addScore(actorId, -10);
         }
+        await markContentUsed(g.id, "charades", r.data.phraseId as string);
+      }
 
-        if (r.minigame === "trivia") {
-          const scores = (extraData?.resultScores ?? updatedData.resultScores) as
-            { playerId: string; correct: boolean }[] | undefined;
-          if (scores) {
-            for (const s of scores) {
-              if (s.correct) {
-                await addScore(s.playerId, 10);
-              } else {
-                await addScore(s.playerId, -5);
-              }
-            }
-            const questions = (r.data.questions ?? []) as { question: TriviaQuestion }[];
-            for (const q of questions) {
-              await markContentUsed(g.id, "trivia", q.question.id);
+      if (r.minigame === "trivia" && phase === "result" && !r.data.triviaScored) {
+        const scores = (extraData?.resultScores ?? updatedData.resultScores) as
+          { playerId: string; correct: boolean }[] | undefined;
+        if (scores) {
+          for (const s of scores) {
+            if (s.correct) {
+              await addScore(s.playerId, 10);
+            } else {
+              await addScore(s.playerId, -5);
             }
           }
-        }
-
-        if (r.minigame === "scategories" && updatedData.wheelPoints !== undefined && updatedData.scatPhase === "result") {
-          const pts = updatedData.wheelPoints as number;
-          if (pts !== 0) {
-            await addScore(r.selectedPlayerIds[0], pts);
+          const questions = (r.data.questions ?? []) as { question: TriviaQuestion }[];
+          for (const q of questions) {
+            await markContentUsed(g.id, "trivia", q.question.id);
           }
-          await markContentUsed(g.id, "scategories", r.data.categoryId as string);
+          updatedData.triviaScored = true;
         }
+      }
+
+      if (r.minigame === "scategories" && updatedData.scatPhase === "result" && !r.data.scatScored) {
+        const pts = updatedData.wheelPoints as number;
+        if (pts !== 0) {
+          await addScore(r.selectedPlayerIds[0], pts);
+        }
+        await markContentUsed(g.id, "scategories", r.data.categoryId as string);
+        updatedData.scatScored = true;
       }
 
       await updateGameRound(g.id, { ...r, phase: phase as CurrentRound["phase"], data: updatedData });
@@ -308,6 +295,18 @@ export default function HostPlayPage() {
       startedAt: new Date().toISOString(),
     });
   }, []);
+
+  const handleKickPlayer = useCallback(async (playerId: string) => {
+    const g = gameRef.current;
+    if (!g) return;
+    const sb = getSupabase();
+    await sb.from("players").update({ score: 0 }).eq("id", playerId);
+    await sb.from("players").delete().eq("id", playerId);
+    setKickMenuOpen(false);
+    const { data: fresh } = await sb.from("players").select("*").eq("game_id", g.id).order("created_at", { ascending: true });
+    if (fresh) setPlayers(fresh as Player[]);
+    showNotification("Player removed");
+  }, [showNotification]);
 
   const handleTransitionDone = useCallback(() => {
     handleAdvance("staging");
@@ -349,6 +348,8 @@ export default function HostPlayPage() {
       startedAt: new Date().toISOString(),
     });
   }, []);
+
+  const hostPlayer = players.find((p) => p.id === hostPlayerId);
 
   if (!game) {
     return (
@@ -424,10 +425,11 @@ export default function HostPlayPage() {
 
   if (!round || round.phase === "scoreboard") {
     return (
-      <main className="flex flex-1 flex-col items-center justify-center px-4">
+      <main className="flex flex-1 flex-col items-center justify-center px-4 pt-14">
+        {hostPlayer && <Hud player={hostPlayer} allPlayers={players} gameId={game.id} />}
         {letEmFly && <FloatingBalls />}
         {notification && (
-          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-lg bg-zinc-900 text-white px-4 py-2 text-sm font-medium shadow-lg animate-fade-in">
+          <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 rounded-lg bg-zinc-900 text-white px-4 py-2 text-sm font-medium shadow-lg animate-fade-in">
             {notification}
           </div>
         )}
@@ -472,19 +474,22 @@ export default function HostPlayPage() {
 
   const showHostControls = ["staging", "active", "result"].includes(round.phase);
 
-  const showContinue = round.phase === "result" && (() => {
+  const showContinue = (() => {
     if (round.minigame === "scategories") {
-      return round.data.scatPhase === "result" || round.data.wheelOutcome !== undefined;
+      return round.data.scatPhase === "result";
     }
-    return true;
+    return round.phase === "result";
   })();
 
+  const nonHostPlayers = players.filter((p) => !p.is_host);
+
   return (
-    <main className="flex flex-1 flex-col items-center justify-center px-4 relative">
+    <main className="flex flex-1 flex-col items-center justify-center px-4 relative pt-14">
+      {hostPlayer && <Hud player={hostPlayer} allPlayers={players} gameId={game.id} />}
       {letEmFly && <FloatingBalls />}
 
       {showHostControls && (
-        <div className="fixed top-3 right-3 z-50 flex items-center gap-2">
+        <div className="fixed top-12 right-3 z-50 flex items-center gap-2">
           <button
             onClick={handlePauseToggle}
             className="flex items-center gap-1 rounded-lg bg-zinc-800 text-white px-3 py-1.5 text-xs font-medium hover:bg-zinc-700 transition-colors"
@@ -499,6 +504,28 @@ export default function HostPlayPage() {
             <SkipForward className="h-3.5 w-3.5" />
             Skip
           </button>
+          <div className="relative">
+            <button
+              onClick={() => setKickMenuOpen(!kickMenuOpen)}
+              className="flex items-center gap-1 rounded-lg bg-red-700 text-white px-3 py-1.5 text-xs font-medium hover:bg-red-600 transition-colors"
+            >
+              <UserX className="h-3.5 w-3.5" />
+              Kick
+            </button>
+            {kickMenuOpen && nonHostPlayers.length > 0 && (
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-xl border border-zinc-200 overflow-hidden z-50">
+                {nonHostPlayers.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => handleKickPlayer(p.id)}
+                    className="w-full text-left px-3 py-2 text-sm text-zinc-700 hover:bg-red-50 hover:text-red-700 transition-colors"
+                  >
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -509,7 +536,7 @@ export default function HostPlayPage() {
       )}
 
       {notification && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-lg bg-zinc-900 text-white px-4 py-2 text-sm font-medium shadow-lg animate-fade-in">
+        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 rounded-lg bg-zinc-900 text-white px-4 py-2 text-sm font-medium shadow-lg animate-fade-in">
           {notification}
         </div>
       )}

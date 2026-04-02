@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SelectedPlayer } from "@/components/selected-player";
+import { MinigameDescriptionPopup } from "@/components/minigame-description";
+import { Info } from "lucide-react";
 import type { Player, CurrentRound } from "@/lib/types";
 
 interface CharadesProps {
@@ -38,6 +40,7 @@ export function Charades({ round, players, currentPlayerId, isHost, onAdvance }:
 
   const [timer, setTimer] = useState(20);
   const [deciding, setDeciding] = useState(false);
+  const [showRulesPopup, setShowRulesPopup] = useState(false);
 
   useEffect(() => {
     if (phase !== "active") return;
@@ -70,7 +73,15 @@ export function Charades({ round, players, currentPlayerId, isHost, onAdvance }:
   if (phase === "staging") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
-        <h2 className="text-2xl font-bold text-zinc-900 mb-2">Charades</h2>
+        <div className="flex items-center gap-2 mb-2">
+          <h2 className="text-2xl font-bold text-zinc-900">Charades</h2>
+          <button onClick={() => setShowRulesPopup(true)} className="text-zinc-400 hover:text-zinc-600 transition-colors">
+            <Info className="h-5 w-5" />
+          </button>
+        </div>
+        {showRulesPopup && (
+          <MinigameDescriptionPopup minigame="charades" onClose={() => setShowRulesPopup(false)} />
+        )}
         <SelectedPlayer player={actor} label="Acting" />
 
         {isActor && (

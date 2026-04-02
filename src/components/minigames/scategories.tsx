@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { SelectedPlayer } from "@/components/selected-player";
+import { MinigameDescriptionPopup } from "@/components/minigame-description";
 import type { Player, CurrentRound } from "@/lib/types";
+import { Info } from "lucide-react";
 
 interface ScategoriesProps {
   round: CurrentRound;
@@ -164,6 +166,9 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
   const [voteCount, setVoteCount] = useState(0);
   const [totalVoters, setTotalVoters] = useState(0);
   const [votedPlayerIds, setVotedPlayerIds] = useState<string[]>([]);
+  const [showRulesPopup, setShowRulesPopup] = useState(false);
+  const defendTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
+  const tallyCalledRef = useRef(false);
 
   useEffect(() => {
     if (scatPhase !== "think") return;
@@ -185,6 +190,7 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
 
   useEffect(() => {
     if (scatPhase !== "defend") return;
+    tallyCalledRef.current = false;
     setDefendTimer(15);
     const interval = setInterval(() => {
       setDefendTimer((t) => {
@@ -192,6 +198,7 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
         return t - 1;
       });
     }, 1000);
+    defendTimerRef.current = interval;
     return () => clearInterval(interval);
   }, [scatPhase]);
 
@@ -201,7 +208,11 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
     const roundNum = data.roundNumber as number;
 
     async function fetchVotes() {
-      const { data: voteRows } = await sb.from("votes").select("player_id").eq("game_id", gameId).eq("round_number", roundNum);
+      const { data: voteRows } = await sb
+        .from("votes")
+        .select("player_id")
+        .eq("game_id", gameId)
+        .eq("round_number", roundNum);
       const ids = (voteRows ?? []).map((v: { player_id: string }) => v.player_id);
       setVotedPlayerIds(ids);
       setVoteCount(ids.length);
@@ -210,18 +221,21 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
     fetchVotes();
 
     const channel = sb
-      .channel(`scat-votes-${gameId}-${currentPlayerId}-${roundNum}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "votes", filter: `game_id=eq.${gameId}` },
-        () => { fetchVotes(); })
+      .channel(`scat-votes-${gameId}-${roundNum}-${Date.now()}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "votes", filter: `game_id=eq.${gameId}` },
+        () => { fetchVotes(); },
+      )
       .subscribe();
 
-    const pollInterval = setInterval(fetchVotes, 2000);
+    const pollInterval = setInterval(fetchVotes, 1000);
 
     return () => {
       sb.removeChannel(channel);
       clearInterval(pollInterval);
     };
-  }, [scatPhase, gameId, data.roundNumber, currentPlayerId]);
+  }, [scatPhase, gameId, data.roundNumber]);
 
   useEffect(() => {
     const voters = players.filter((p) => p.id !== hotSeatId);
@@ -229,10 +243,19 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
   }, [players, hotSeatId]);
 
   useEffect(() => {
-    if (defendTimer === 0 && scatPhase === "defend" && isHost) {
-      handleTallyVotes();
-    }
-    if (voteCount >= totalVoters && totalVoters > 0 && scatPhase === "defend" && isHost) {
+    if (scatPhase !== "defend" || !isHost) return;
+    if (tallyCalledRef.current) return;
+
+    const allVoted = voteCount >= totalVoters && totalVoters > 0;
+    const timedOut = defendTimer === 0;
+
+    if (allVoted || timedOut) {
+      tallyCalledRef.current = true;
+      if (defendTimerRef.current) {
+        clearInterval(defendTimerRef.current);
+        defendTimerRef.current = undefined;
+      }
+      setDefendTimer(0);
       handleTallyVotes();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -273,6 +296,7 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
       noVotes,
       wheelOutcome: outcome.label,
       wheelPoints: outcome.points,
+      wheelStartedAt: new Date().toISOString(),
     });
   }, [gameId, data.roundNumber, totalVoters, onAdvance]);
 
@@ -283,7 +307,19 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
   if (rawPhase === "staging" && scatPhase === "staging") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
-        <h2 className="text-2xl font-bold text-zinc-900 mb-2">Scategories</h2>
+        <div className="flex items-center gap-2 mb-2">
+          <h2 className="text-2xl font-bold text-zinc-900">Scategories</h2>
+          <button onClick={() => setShowRulesPopup(true)} className="text-zinc-400 hover:text-zinc-600 transition-colors">
+            <Info className="h-5 w-5" />
+          </button>
+        </div>
+        {showRulesPopup && (
+          <MinigameDescriptionPopup
+            name="Scategories"
+            description="A letter and category are revealed. The hot-seat player must quickly say a word that starts with that letter and fits the category. Everyone else votes to accept or reject. A Wheel of Fate decides your reward or punishment!"
+            onClose={() => setShowRulesPopup(false)}
+          />
+        )}
         <SelectedPlayer player={hotSeatPlayer} label="On the Hot Seat" />
         <p className="text-sm text-zinc-400 mt-2">Letter and category will appear when {hotSeatPlayer?.name} hits Play</p>
         {isHotSeat && (
@@ -395,7 +431,7 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
           finalLabel={wheelOutcome}
           onDone={() => {
             if (isHost) {
-              onAdvance("result", {
+              onAdvance("active", {
                 scatPhase: "result",
                 wheelOutcome: data.wheelOutcome,
                 wheelPoints: data.wheelPoints,
@@ -410,7 +446,7 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
     );
   }
 
-  if (rawPhase === "result" || scatPhase === "result") {
+  if (scatPhase === "result") {
     const accepted = data.accepted as boolean;
     const yesVotes = (data.yesVotes as number) ?? 0;
     const noVotes = (data.noVotes as number) ?? 0;
