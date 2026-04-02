@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { MinigameType } from "@/lib/types";
+import { FloatingBalls } from "@/components/floating-balls";
 
 const LABELS: Record<MinigameType, string> = {
   charades: "Charades",
@@ -38,8 +39,9 @@ export function Transition({ minigame, onComplete }: TransitionProps) {
   }, [onComplete]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] px-4">
-      <div className="mb-8 text-center">
+    <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 relative">
+      <FloatingBalls />
+      <div className="mb-8 text-center relative z-10">
         <p className="text-xs tracking-widest uppercase text-zinc-400 mb-1">
           Up Next
         </p>
@@ -51,15 +53,15 @@ export function Transition({ minigame, onComplete }: TransitionProps) {
         </p>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-6 relative z-10">
         {STEPS.map((label, i) => (
           <span
             key={label}
             className={cn(
-              "text-2xl font-black transition-all duration-300",
+              "text-2xl font-black transition-all duration-300 origin-center",
               step >= i
                 ? i === 2
-                  ? "text-emerald-600 scale-125"
+                  ? "text-emerald-600 scale-125 ml-2"
                   : "text-zinc-900 scale-110"
                 : "text-zinc-200 scale-100",
             )}

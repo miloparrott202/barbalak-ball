@@ -43,9 +43,9 @@ export function selectPlayers(players: Player[], count: number): Player[] {
 }
 
 export function buildCharadesRound(selectedPlayer: Player, usedIds: string[]): CurrentRound {
-  const available = charades.filter((c) => !usedIds.includes(c.id));
-  const pool = available.length > 0 ? available : charades;
-  const phrase = pickRandom(pool);
+  const available = charades.filter((c) => !usedIds.includes(c.id) && c.phrase?.trim());
+  const pool = available.length > 0 ? available : charades.filter((c) => c.phrase?.trim());
+  const phrase = pickRandom(pool.length > 0 ? pool : charades);
   return {
     minigame: "charades",
     phase: "transition",
@@ -56,55 +56,33 @@ export function buildCharadesRound(selectedPlayer: Player, usedIds: string[]): C
 }
 
 export function buildTriviaRound(
-  players: Player[],
+  selectedPlayer: Player,
   usedIds: string[],
 ): CurrentRound {
   const available = triviaQuestions.filter((q) => !usedIds.includes(q.id));
   const source = available.length > 0 ? available : triviaQuestions;
 
-  const numQuestions = Math.max(2, Math.ceil(players.length * 0.5));
-  const difficulties = selectTriviadifficulties(numQuestions);
-  const questions: TriviaQuestion[] = [];
+  const difficulty = weightedRandom([
+    { value: "easy", weight: 30 },
+    { value: "medium", weight: 30 },
+    { value: "hard", weight: 30 },
+    { value: "ruinous", weight: 10 },
+  ]);
 
-  for (const diff of difficulties) {
-    const matches = source.filter(
-      (q) => q.difficulty === diff && !questions.some((s) => s.id === q.id),
-    );
-    if (matches.length > 0) {
-      questions.push(pickRandom(matches));
-    } else {
-      const fallback = source.filter((q) => !questions.some((s) => s.id === q.id));
-      if (fallback.length > 0) questions.push(pickRandom(fallback));
-    }
-  }
+  const matches = source.filter((q) => q.difficulty === difficulty);
+  const question = matches.length > 0 ? pickRandom(matches) : pickRandom(source);
 
   return {
     minigame: "trivia",
     phase: "transition",
-    selectedPlayerIds: players.map((p) => p.id),
+    selectedPlayerIds: [selectedPlayer.id],
     data: {
-      questions: questions.map((q) => q.id),
-      currentQuestion: 0,
-      questionData: questions,
+      questionData: question,
     },
     startedAt: new Date().toISOString(),
   };
 }
 
-function selectTriviadifficulties(count: number): string[] {
-  const diffs: string[] = [];
-  for (let i = 0; i < count; i++) {
-    diffs.push(
-      weightedRandom([
-        { value: "easy", weight: 30 },
-        { value: "medium", weight: 30 },
-        { value: "hard", weight: 30 },
-        { value: "ruinous", weight: 10 },
-      ]),
-    );
-  }
-  return diffs;
-}
 
 export function buildScategoriesRound(selectedPlayer: Player, usedIds: string[]): CurrentRound {
   const available = scategoryCategories.filter((c) => !usedIds.includes(c.id));
@@ -202,31 +180,24 @@ export function getDifficultyPoints(difficulty: string): number {
 
 export async function tallyTriviaScores(gameId: string, round: CurrentRound) {
   const sb = getSupabase();
-  const questionData = round.data.questionData as TriviaQuestion[];
-  const questionIds = questionData.map((q) => q.id);
+  const question = round.data.questionData as TriviaQuestion;
+  const selectedPlayerId = round.selectedPlayerIds[0];
 
   const { data: answers } = await sb
     .from("answers")
     .select("*")
     .eq("game_id", gameId)
-    .in("question_id", questionIds);
+    .eq("question_id", question.id)
+    .eq("player_id", selectedPlayerId);
 
-  if (answers) {
-    const scoreMap: Record<string, number> = {};
-    for (const a of answers) {
-      if (!a.is_correct) continue;
-      const q = questionData.find((qd) => qd.id === a.question_id);
-      const pts = q ? getDifficultyPoints(q.difficulty) : 2;
-      scoreMap[a.player_id] = (scoreMap[a.player_id] ?? 0) + pts;
-    }
-    for (const [pid, pts] of Object.entries(scoreMap)) {
-      await addScore(pid, pts);
-    }
+  const correct = answers?.some((a) => a.is_correct) ?? false;
+  if (correct) {
+    const pts = getDifficultyPoints(question.difficulty);
+    await addScore(selectedPlayerId, pts);
   }
 
-  for (const qid of questionIds) {
-    await markContentUsed(gameId, "trivia", qid);
-  }
+  await markContentUsed(gameId, "trivia", question.id);
+  return correct;
 }
 
 export async function executePendingPurchases(gameId: string) {

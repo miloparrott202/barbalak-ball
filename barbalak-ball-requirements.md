@@ -1,6 +1,6 @@
 # Barbalak-Ball — Master Architectural & Functional Specification
 
-> **Version:** 3.0.0  
+> **Version:** 4.0.0  
 > **Status:** Canonical  
 > **Stack:** Next.js (App Router) · Supabase (Realtime + Postgres) · Vercel  
 > **Content Source:** All generated content lives in `content/*.json`. This document defines mechanics only.
@@ -27,10 +27,18 @@
 
 | Role | Description |
 |---|---|
-| **Main Player (Host)** | Creates the game. Participates in every minigame like any other player. Has exclusive write-access to the Settings/Toggle page. |
-| **Joined Players** | Scan QR / tap link to join. Full participants. Can view settings and read rules but cannot modify toggles. |
+| **Host** | Creates the game. After creation, picks a name and icon just like any joined player. Inserted into the `players` table with `is_host = true`. Participates in every minigame — can be randomly selected, scores points, etc. Has exclusive write-access to the Settings/Toggle page and host-only controls (advance buttons, etc.). |
+| **Joined Players** | Scan QR / tap link to join. Full participants. Pick a name and icon. Can view settings and read rules but cannot modify toggles. |
 
 - Every participant plays from their own phone. There are no "phoneless" players.
+- **The host is a full player.** They pick a name and ball icon on the lobby page before other players join.
+
+### 1.1.1 Player Icons (Ball Icons)
+
+- Player icons are images stored in `public/balls/`. Source files: `content/images/balls/*.png`.
+- On the join screen (and host lobby), each player selects an icon from the available set.
+- The chosen icon filename is stored in `players.icon_id` (e.g. `"ball-1.png"`).
+- Whenever a player is "up" (selected for a minigame), their ball icon is displayed alongside their name.
 
 ### 1.2 Settings / Toggle Page
 
@@ -107,8 +115,19 @@ All game content must follow these rules. They apply to trivia, charades, fifty-
 |---|---|---|
 | 1. Announcement | Minigame name + selected player name(s) pop up on all screens. | `gong.mp4` |
 | 2. Rules | Rules display on all joined players' screens. Persist until the selected player presses **"Begin"**. | — |
-| 3. Countdown | Words appear one at a time on all screens: **"Ready?"** → **"Set?"** → **"Barbalak!!!"** | `ding.mp4` on each word |
+| 3. Countdown | Words appear one at a time on all screens: **"Ready?"** → **"Set?"** → **"BARBALAK!!!"** with extra left margin on "BARBALAK!!!" to prevent overlap when it scales up. | `ding.mp4` on each word |
 | 4. Start | Minigame begins immediately. | — |
+
+### 1.10 Floating Balls Background
+
+- During every transition/intro screen, ball icons from `public/balls/` float across the background.
+- Balls spawn at random positions outside the viewport edge and drift in a random direction.
+- **Density range:** 3–10 balls visible at once (randomized per transition).
+- **Speed range:** 15–45px/second (randomized per ball).
+- **Direction:** Random angle per ball.
+- If more than 20 balls exist on screen simultaneously, the oldest ones are removed.
+- Multiple copies of the same ball image can appear.
+- Each new transition randomizes density and speed range.
 
 ---
 
@@ -122,10 +141,10 @@ All game content must follow these rules. They apply to trivia, charades, fifty-
 
 ### 2.2 Gameplay
 
-1. Random player selected.
+1. Random player selected. Their ball icon + name displayed.
 2. Phrase shown **only** on that player's phone.
 3. Player reads phrase, presses **"Begin"**.
-5. **10-second countdown timer** appears on the main device (visible to all).
+5. **20-second countdown timer** appears on the main device (visible to all).
 6. `tick.mp4` plays every second.
 7. Group shouts guesses (honor system). Actor or host confirms via Yes/No prompt on actor's device.
 
@@ -152,10 +171,11 @@ All game content must follow these rules. They apply to trivia, charades, fifty-
 
 ### 3.2 Gameplay
 
-- **Questions per round:** `ceil(Total Players × 0.5)` (minimum 2)
+- **One player is selected per trivia round.** Their ball icon + name displayed. The selected player answers the questions; everyone else watches.
+- **Questions per round:** 1 question per trivia round.
 - All questions are **multiple choice (4 options)**.
 - **15-second timer** per question.
-- First correct answer earns a speed bonus of **+1 pt**.
+- Points at stake are displayed prominently before the question appears (based on difficulty).
 
 ### 3.3 Difficulty Distribution
 
@@ -177,18 +197,22 @@ All game content must follow these rules. They apply to trivia, charades, fifty-
 
 ### 4.1 Gameplay
 
-1. Random player selected. Presses **"Play"**.
+1. Random player selected. Their ball icon + name displayed. Host starts the round.
 2. A **Letter** and a **Category** are displayed on all screens.
 3. The letter is chosen at random from the valid letter pool. The category is chosen at random from the category pool. **They are not pre-paired** — assignment is fully random at runtime.
 
 **Phase 1 — Think (5 seconds):**
-- All phones show a 5-second countdown.
+- All phones show a dramatic 5-second countdown.
 - Player thinks of a word starting with the letter that fits the category.
-- Player can press **"Done"** early.
+- **No typing.** The player does NOT enter their answer. They think silently.
 
 **Phase 2 — Defend (15 seconds):**
-- All screens show **"Let's hear it"** with a 15-second timer.
-- Player verbally defends their word.
+- All screens show **"Defend your answer!"** with a 15-second timer.
+- Player verbally says and defends their word.
+- All **other** players (not the hot-seat player) see a voting screen with thumbs up / thumbs down.
+- Votes are recorded to the `votes` table in real-time.
+- Round ends when **all voters have voted** OR the 15-second timer expires.
+- Players who do not vote by timer expiry **default to thumbs-down** (reject).
 
 ### 4.2 Letter Pool
 
@@ -198,28 +222,31 @@ Excluded: Q, U, V, X, Y, Z.
 
 ### 4.3 Voting
 
-- All other players see a private voting screen: `yes.png` (thumbs up) / `no.png` (thumbs down).
-- Thumbs down triggers `buzzer.mp3` **on that player's device only**.
-- UI shows who hasn't voted yet.
-- **Tie goes to the player.**
+- All other players see a private voting screen with thumbs up / thumbs down buttons.
+- Votes are tallied in real-time. UI shows how many have voted.
+- **Tie goes to the player** (50%+ of votes must be thumbs-down to reject).
+- Non-voters at timer expiry default to thumbs-down.
 
 ### 4.4 Scoring
 
 | Outcome | Points |
 |---|---|
-| Majority Yes (or tie) | **+10** |
-| Majority No | **-5** |
+| Accepted (majority Yes or tie) | **+5** |
+| Rejected (majority No) | **-5** |
 
 ---
 
 ## 5. Minigame: Fifty Fifty
 
-### 5.1 Sequence (Vegas slots animation, ~3 seconds per step)
+### 5.1 Sequence (Dramatic Reveal)
 
-1. **Select Player** — random.
-2. **Select Type** — Penalty or Bonus (50/50).
-3. **Select Rarity** — Common (65%), Rare (30%), Legendary (5%). Rarity displayed prominently for 2 seconds.
-4. **Display Action** — shown on all screens.
+1. **Select Player** — random. Ball icon + name displayed.
+2. **Reveal Type** — Slot-machine-style spinning animation rapidly cycles through "PENALTY" / "BONUS" text, then locks in the result. Fast (~1.5s).
+3. **Reveal Rarity** — Same spinning animation, cycles through "Common" / "Rare" / "Legendary", then locks in. Fast (~1.5s).
+4. **Reveal Action** — The action text is displayed.
+   - **Legendary:** Screen flashes green, pulsing glow effect, shaking animation — full "legendary drop" reveal.
+   - **Rare:** Subtle shimmer/glow effect.
+   - **Common:** No special effect.
 
 ### 5.2 Refusal Penalties
 
@@ -262,6 +289,7 @@ Negative point totals are allowed.
 1. **"WORLD EVENT"** flashes on all screens (large, bold, centered).
 2. After **1.5 seconds**, event text fades in below.
 3. Remains for 6 seconds or until host dismisses.
+4. **No** "this affects everyone for the rest of the game" subtitle — world events are one-time actions.
 
 ### 6.3 Tone
 

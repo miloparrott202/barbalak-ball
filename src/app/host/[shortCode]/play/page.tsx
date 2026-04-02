@@ -36,6 +36,7 @@ export default function HostPlayPage() {
   const router = useRouter();
   const [game, setGame] = useState<Game | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [hostPlayerId, setHostPlayerId] = useState<string>("");
   const [notification, setNotification] = useState<string | null>(null);
   const [roundBusy, setRoundBusy] = useState(false);
   const notifTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -71,7 +72,11 @@ export default function HostPlayPage() {
         .select("*")
         .eq("game_id", g.id)
         .order("created_at", { ascending: true });
-      if (p) setPlayers(p as Player[]);
+      if (p) {
+        setPlayers(p as Player[]);
+        const host = (p as Player[]).find((pl) => pl.is_host);
+        if (host) setHostPlayerId(host.id);
+      }
 
       gameChannel = sb
         .channel(`host-game-${g.id}`)
@@ -119,7 +124,8 @@ export default function HostPlayPage() {
       }
       case "trivia": {
         const used = await getUsedContent(g.id, "trivia");
-        round = buildTriviaRound(pl, used);
+        const p = selectPlayers(pl, 1)[0];
+        round = buildTriviaRound(p, used);
         break;
       }
       case "scategories": {
@@ -135,7 +141,9 @@ export default function HostPlayPage() {
       }
     }
 
-    await getSupabase().from("games").update({ round_number: g.round_number + 1 }).eq("id", g.id);
+    const newRoundNum = g.round_number + 1;
+    round.data.roundNumber = newRoundNum;
+    await getSupabase().from("games").update({ round_number: newRoundNum }).eq("id", g.id);
     await updateGameRound(g.id, round);
   }, []);
 
@@ -203,7 +211,7 @@ export default function HostPlayPage() {
       const g = gameRef.current;
       if (!g?.current_round) return;
       const r = g.current_round;
-      const updatedData = extraData ? { ...r.data, ...extraData } : r.data;
+      const updatedData: Record<string, unknown> = extraData ? { ...r.data, ...extraData } : { ...r.data };
 
       if (phase === "result") {
         if (r.minigame === "charades" && extraData?.success) {
@@ -211,21 +219,17 @@ export default function HostPlayPage() {
           await markContentUsed(g.id, "charades", r.data.phraseId as string);
         }
         if (r.minigame === "trivia" && r.phase !== "result") {
-          await tallyTriviaScores(g.id, r);
+          const correct = await tallyTriviaScores(g.id, r);
+          updatedData.correct = correct;
         }
-        if (r.minigame === "scategories" && extraData?.accepted && r.data.accepted === undefined) {
-          await addScore(r.selectedPlayerIds[0], 5);
+        if (r.minigame === "scategories" && extraData?.accepted !== undefined && r.data.accepted === undefined) {
+          if (extraData.accepted) {
+            await addScore(r.selectedPlayerIds[0], 5);
+          } else {
+            await addScore(r.selectedPlayerIds[0], -5);
+          }
           await markContentUsed(g.id, "scategories", r.data.categoryId as string);
         }
-      }
-
-      if (r.minigame === "trivia" && phase === "active" && extraData?.currentQuestion !== undefined) {
-        await updateGameRound(g.id, {
-          ...r,
-          phase: "active" as const,
-          data: { ...r.data, currentQuestion: extraData.currentQuestion },
-        });
-        return;
       }
 
       await updateGameRound(g.id, { ...r, phase: phase as CurrentRound["phase"], data: updatedData });
@@ -337,7 +341,7 @@ export default function HostPlayPage() {
   const minigameProps = {
     round,
     players,
-    currentPlayerId: "",
+    currentPlayerId: hostPlayerId,
     isHost: true,
     onAdvance: handleAdvance,
   };

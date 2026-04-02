@@ -5,8 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import { Users, ArrowRight } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { PlayerList } from "@/components/player-list";
+import { IconPicker } from "@/components/icon-picker";
 import type { Player } from "@/lib/types";
 import { QRDisplay } from "@/components/qr-display";
 import { CopyLink } from "@/components/copy-link";
@@ -19,6 +21,11 @@ export default function HostLobbyPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [proceeding, setProceeding] = useState(false);
   const [joinUrl, setJoinUrl] = useState("");
+
+  const [hostPlayer, setHostPlayer] = useState<Player | null>(null);
+  const [hostName, setHostName] = useState("");
+  const [hostIcon, setHostIcon] = useState("ball-1.png");
+  const [registering, setRegistering] = useState(false);
 
   useEffect(() => {
     const base = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
@@ -47,7 +54,11 @@ export default function HostLobbyPage() {
         .select("*")
         .eq("game_id", gameId)
         .order("created_at", { ascending: true });
-      if (data) setPlayers(data as Player[]);
+      if (data) {
+        setPlayers(data as Player[]);
+        const existing = (data as Player[]).find((p) => p.is_host);
+        if (existing) setHostPlayer(existing);
+      }
     }
     fetchPlayers();
 
@@ -55,22 +66,31 @@ export default function HostLobbyPage() {
       .channel(`players-${gameId}`)
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "players",
-          filter: `game_id=eq.${gameId}`,
-        },
-        () => {
-          fetchPlayers();
-        },
+        { event: "*", schema: "public", table: "players", filter: `game_id=eq.${gameId}` },
+        () => fetchPlayers(),
       )
       .subscribe();
 
-    return () => {
-      sb.removeChannel(channel);
-    };
+    return () => { sb.removeChannel(channel); };
   }, [gameId]);
+
+  async function handleRegisterHost() {
+    if (!gameId || !hostName.trim()) return;
+    setRegistering(true);
+    try {
+      const { data, error } = await getSupabase()
+        .from("players")
+        .insert({ game_id: gameId, name: hostName.trim(), icon_id: hostIcon, is_host: true })
+        .select()
+        .single();
+      if (error) throw error;
+      setHostPlayer(data as Player);
+    } catch (err) {
+      console.error("Failed to register host:", err);
+    } finally {
+      setRegistering(false);
+    }
+  }
 
   async function handleProceed() {
     if (!gameId) return;
@@ -80,6 +100,48 @@ export default function HostLobbyPage() {
       .update({ status: "settings" })
       .eq("id", gameId);
     router.push(`/host/${shortCode}/settings`);
+  }
+
+  if (!hostPlayer) {
+    return (
+      <main className="flex flex-1 flex-col items-center justify-center px-4 py-8">
+        <Card className="w-full max-w-sm">
+          <CardContent className="space-y-5">
+            <div className="text-center">
+              <p className="text-sm font-medium text-emerald-600 tracking-wide uppercase">
+                Host Setup
+              </p>
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-900">
+                {shortCode}
+              </h1>
+            </div>
+
+            <div>
+              <label htmlFor="host-name" className="mb-1.5 block text-sm font-medium text-zinc-700">
+                Your Name
+              </label>
+              <Input
+                id="host-name"
+                placeholder="Enter your name"
+                value={hostName}
+                onChange={(e) => setHostName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleRegisterHost(); }}
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-zinc-700">Pick Your Ball</p>
+              <IconPicker selected={hostIcon} onSelect={setHostIcon} />
+            </div>
+
+            <Button className="w-full" size="lg" onClick={handleRegisterHost} disabled={!hostName.trim() || registering}>
+              {registering ? "Setting up\u2026" : "Continue"}
+            </Button>
+          </CardContent>
+        </Card>
+      </main>
+    );
   }
 
   return (
@@ -119,7 +181,7 @@ export default function HostLobbyPage() {
           <Button
             size="lg"
             onClick={handleProceed}
-            disabled={players.length === 0 || proceeding}
+            disabled={players.length < 2 || proceeding}
           >
             {proceeding ? "Proceeding\u2026" : "All Players Joined"}
             {!proceeding && <ArrowRight className="h-4 w-4" />}

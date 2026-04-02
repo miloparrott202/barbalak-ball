@@ -17,7 +17,7 @@ export function WorldEventCard({ event, isHost, onDismiss }: WorldEventProps) {
       <div className="rounded-xl bg-amber-50 border border-amber-200 px-8 py-6 max-w-sm mb-6">
         <p className="text-lg font-semibold text-zinc-900">{event}</p>
       </div>
-      <p className="text-sm text-zinc-400 mb-4">This affects everyone for the rest of the game!</p>
+      <p className="text-sm text-zinc-400 mb-4">Do it. Now.</p>
       {isHost && (
         <Button onClick={onDismiss}>Continue</Button>
       )}

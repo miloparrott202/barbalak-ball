@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SelectedPlayer } from "@/components/selected-player";
 import type { Player, CurrentRound } from "@/lib/types";
 
 interface ScategoriesProps {
@@ -16,52 +16,116 @@ interface ScategoriesProps {
   onAdvance: (phase: string, extraData?: Record<string, unknown>) => void;
 }
 
+type ScatPhase = "staging" | "think" | "defend" | "result";
+
 export function Scategories({ round, players, currentPlayerId, isHost, gameId, onAdvance }: ScategoriesProps) {
-  const { phase, data, selectedPlayerIds } = round;
+  const { phase: rawPhase, data, selectedPlayerIds } = round;
   const hotSeatId = selectedPlayerIds[0];
   const isHotSeat = currentPlayerId === hotSeatId;
   const hotSeatPlayer = players.find((p) => p.id === hotSeatId);
   const category = data.category as string;
   const letter = data.letter as string;
 
-  const [timer, setTimer] = useState(30);
-  const [answer, setAnswer] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-  const [deciding, setDeciding] = useState(false);
+  const scatPhase = (data.scatPhase as ScatPhase) || (rawPhase === "staging" ? "staging" : rawPhase === "active" ? "think" : "result");
+
+  const [thinkTimer, setThinkTimer] = useState(5);
+  const [defendTimer, setDefendTimer] = useState(15);
+  const [myVote, setMyVote] = useState<boolean | null>(null);
+  const [voteCount, setVoteCount] = useState(0);
+  const [totalVoters, setTotalVoters] = useState(0);
 
   useEffect(() => {
-    if (phase !== "active") return;
+    if (scatPhase !== "think") return;
+    setThinkTimer(5);
     const interval = setInterval(() => {
-      setTimer((t) => {
-        if (t <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
+      setThinkTimer((t) => {
+        if (t <= 1) { clearInterval(interval); return 0; }
         return t - 1;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [phase]);
+  }, [scatPhase]);
 
-  const lockInAnswer = useCallback(async () => {
-    if (!answer.trim() || submitted) return;
-    setSubmitted(true);
-    const sb = getSupabase();
-    const { data: g } = await sb.from("games").select("current_round").eq("id", gameId).single();
-    if (g?.current_round) {
-      await sb.from("games").update({
-        current_round: { ...g.current_round, data: { ...g.current_round.data, answer: answer.trim() } },
-      }).eq("id", gameId);
+  useEffect(() => {
+    if (thinkTimer === 0 && scatPhase === "think" && isHost) {
+      onAdvance("active", { scatPhase: "defend" });
     }
-  }, [answer, submitted, gameId]);
+  }, [thinkTimer, scatPhase, isHost, onAdvance]);
 
-  if (phase === "staging") {
+  useEffect(() => {
+    if (scatPhase !== "defend") return;
+    setDefendTimer(15);
+    const interval = setInterval(() => {
+      setDefendTimer((t) => {
+        if (t <= 1) { clearInterval(interval); return 0; }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [scatPhase]);
+
+  useEffect(() => {
+    if (scatPhase !== "defend" || !gameId) return;
+    const sb = getSupabase();
+    const channel = sb
+      .channel(`scat-votes-${gameId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "votes", filter: `game_id=eq.${gameId}` },
+        async () => {
+          const { count } = await sb.from("votes").select("*", { count: "exact", head: true }).eq("game_id", gameId).eq("round_number", data.roundNumber as number);
+          setVoteCount(count ?? 0);
+        })
+      .subscribe();
+    return () => { sb.removeChannel(channel); };
+  }, [scatPhase, gameId, data.roundNumber]);
+
+  useEffect(() => {
+    const voters = players.filter((p) => p.id !== hotSeatId);
+    setTotalVoters(voters.length);
+  }, [players, hotSeatId]);
+
+  useEffect(() => {
+    if (defendTimer === 0 && scatPhase === "defend" && isHost) {
+      handleTallyVotes();
+    }
+    if (voteCount >= totalVoters && totalVoters > 0 && scatPhase === "defend" && isHost) {
+      handleTallyVotes();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defendTimer, voteCount, totalVoters, scatPhase, isHost]);
+
+  const handleVote = useCallback(async (approve: boolean) => {
+    if (myVote !== null) return;
+    setMyVote(approve);
+    const sb = getSupabase();
+    await sb.from("votes").insert({
+      game_id: gameId,
+      player_id: currentPlayerId,
+      round_number: data.roundNumber as number,
+      vote: approve,
+    });
+  }, [myVote, gameId, currentPlayerId, data.roundNumber]);
+
+  const handleTallyVotes = useCallback(async () => {
+    const sb = getSupabase();
+    const { data: votes } = await sb.from("votes")
+      .select("vote")
+      .eq("game_id", gameId)
+      .eq("round_number", data.roundNumber as number);
+
+    const yesVotes = (votes ?? []).filter((v: { vote: boolean }) => v.vote).length;
+    const totalCast = (votes ?? []).length;
+    const nonVoters = totalVoters - totalCast;
+    const noVotes = (totalCast - yesVotes) + nonVoters;
+    const accepted = yesVotes >= noVotes;
+
+    onAdvance("result", { accepted, yesVotes, noVotes: noVotes });
+  }, [gameId, data.roundNumber, totalVoters, onAdvance]);
+
+  if (rawPhase === "staging" && scatPhase === "staging") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
         <h2 className="text-2xl font-bold text-zinc-900 mb-2">Scategories</h2>
-        <p className="text-zinc-500 mb-4">
-          <span className="font-semibold text-zinc-700">{hotSeatPlayer?.name}</span> is on the hot seat.
-        </p>
+        <SelectedPlayer player={hotSeatPlayer} label="On the Hot Seat" />
         <div className="flex items-center gap-4 mt-2">
           <div className="rounded-xl bg-zinc-50 border border-zinc-200 px-6 py-4 text-center">
             <p className="text-xs text-zinc-400 uppercase tracking-wider">Category</p>
@@ -73,112 +137,103 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
           </div>
         </div>
         {isHost && (
-          <Button onClick={() => onAdvance("active")} className="mt-6">
-            Start Timer
+          <Button onClick={() => onAdvance("active", { scatPhase: "think" })} className="mt-6">
+            Start Round
           </Button>
         )}
       </div>
     );
   }
 
-  if (phase === "active") {
-    const answerFromDb = data.answer as string | undefined;
+  if (scatPhase === "think") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
-        <div
-          className={cn(
-            "text-5xl font-black tabular-nums mb-4",
-            timer <= 10 ? "text-red-500" : "text-zinc-900",
-          )}
-        >
-          {timer}
+        <p className="text-xs tracking-widest uppercase text-zinc-400 mb-2">Think Fast!</p>
+        <div className={cn(
+          "text-8xl font-black tabular-nums mb-6 transition-all",
+          thinkTimer <= 2 ? "text-red-500 scale-110" : "text-zinc-900",
+        )}>
+          {thinkTimer}
         </div>
         <div className="flex items-center gap-3 mb-4">
           <span className="text-sm text-zinc-500">{category}</span>
           <span className="text-xl font-black text-emerald-600">{letter}</span>
         </div>
-        {isHotSeat ? (
-          submitted ? (
-            <p className="text-emerald-600 font-semibold">Answer locked in!</p>
-          ) : (
-            <div className="w-full max-w-xs">
-              <Input
-                placeholder={`Word starting with ${letter}...`}
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                className="text-center text-lg"
-                autoFocus
-              />
-              <Button
-                onClick={lockInAnswer}
-                className="mt-4 w-full"
-                disabled={!answer.trim()}
-              >
-                Lock In Answer
-              </Button>
-            </div>
-          )
-        ) : (
-          <p className="text-zinc-400 text-sm">
-            {answerFromDb
-              ? `${hotSeatPlayer?.name} locked in!`
-              : `Waiting for ${hotSeatPlayer?.name} to answer...`}
-          </p>
-        )}
-        {isHost && (answerFromDb || timer === 0) && (
-          <Button
-            onClick={() => onAdvance("result")}
-            variant={timer === 0 ? "danger" : "primary"}
-            className="mt-4"
-          >
-            {timer === 0 ? "Time\u2019s Up \u2014 Move to Judging" : "Move to Judging"}
-          </Button>
-        )}
+        <p className="text-sm text-zinc-400">
+          {isHotSeat ? "Think of a word — don't say it yet!" : `${hotSeatPlayer?.name} is thinking...`}
+        </p>
       </div>
     );
   }
 
-  if (phase === "result") {
-    const givenAnswer = (data.answer as string) ?? "(no answer)";
-    const decided = data.accepted !== undefined;
-    const accepted = data.accepted as boolean;
-
+  if (scatPhase === "defend") {
+    const isVoter = !isHotSeat && currentPlayerId !== "";
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
-        <h2 className="text-2xl font-bold text-zinc-900 mb-2">Scategories</h2>
-        <p className="text-zinc-500 mb-4">
-          {hotSeatPlayer?.name} answered:
-        </p>
-        <div className="rounded-xl bg-zinc-50 border border-zinc-200 px-8 py-4 mb-4">
-          <p className="text-2xl font-bold text-zinc-900">&ldquo;{givenAnswer}&rdquo;</p>
+        <p className="text-xs tracking-widest uppercase text-amber-500 mb-2">Defend Your Answer!</p>
+        <div className={cn(
+          "text-5xl font-black tabular-nums mb-4",
+          defendTimer <= 5 ? "text-red-500" : "text-zinc-900",
+        )}>
+          {defendTimer}
         </div>
-        <p className="text-sm text-zinc-400 mb-4">
+        <SelectedPlayer player={hotSeatPlayer} label="Defending" />
+        <div className="flex items-center gap-3 mb-6">
+          <span className="text-sm text-zinc-500">{category}</span>
+          <span className="text-xl font-black text-emerald-600">{letter}</span>
+        </div>
+
+        {isVoter && myVote === null && (
+          <div className="flex gap-4">
+            <Button onClick={() => handleVote(true)} className="px-8 py-4 text-lg">
+              👍 Accept
+            </Button>
+            <Button variant="danger" onClick={() => handleVote(false)} className="px-8 py-4 text-lg">
+              👎 Reject
+            </Button>
+          </div>
+        )}
+
+        {isVoter && myVote !== null && (
+          <p className="text-emerald-600 font-semibold">Vote cast!</p>
+        )}
+
+        {isHotSeat && (
+          <p className="text-zinc-400 text-sm">Defend your answer out loud!</p>
+        )}
+
+        <p className="text-xs text-zinc-400 mt-4">{voteCount} / {totalVoters} voted</p>
+      </div>
+    );
+  }
+
+  if (rawPhase === "result") {
+    const accepted = data.accepted as boolean;
+    const yesVotes = (data.yesVotes as number) ?? 0;
+    const noVotes = (data.noVotes as number) ?? 0;
+
+    return (
+      <div className="flex flex-col items-center justify-center px-4 text-center py-8">
+        <h2 className="text-2xl font-bold text-zinc-900 mb-2">Scategories</h2>
+        <SelectedPlayer player={hotSeatPlayer} />
+        <p className="text-sm text-zinc-400 mb-2">
           Category: {category} | Letter: {letter}
         </p>
 
-        {decided ? (
-          <p className={cn("font-semibold text-lg", accepted ? "text-emerald-600" : "text-red-500")}>
-            {accepted ? `Accepted! +5 pts to ${hotSeatPlayer?.name}` : `Rejected! ${hotSeatPlayer?.name} drinks!`}
-          </p>
-        ) : (
-          isHost && (
-            <div className="flex gap-3">
-              <Button
-                disabled={deciding}
-                onClick={() => { setDeciding(true); onAdvance("result", { accepted: true }); }}
-              >
-                Accept (+5 pts)
-              </Button>
-              <Button
-                variant="danger"
-                disabled={deciding}
-                onClick={() => { setDeciding(true); onAdvance("result", { accepted: false }); }}
-              >
-                Reject (drink!)
-              </Button>
-            </div>
-          )
-        )}
+        <div className="flex gap-6 mb-4">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-emerald-600">{yesVotes}</p>
+            <p className="text-xs text-zinc-400">Accept</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-red-500">{noVotes}</p>
+            <p className="text-xs text-zinc-400">Reject</p>
+          </div>
+        </div>
+
+        <p className={cn("font-semibold text-lg", accepted ? "text-emerald-600" : "text-red-500")}>
+          {accepted ? `Accepted! +5 pts to ${hotSeatPlayer?.name}` : `Rejected! -5 pts for ${hotSeatPlayer?.name}`}
+        </p>
       </div>
     );
   }

@@ -16,6 +16,7 @@ import { Scategories } from "@/components/minigames/scategories";
 import { FiftyFifty } from "@/components/minigames/fifty-fifty";
 import { WorldEventCard } from "@/components/events/world-event";
 import { FunFactCard } from "@/components/events/fun-fact";
+import { IconPicker } from "@/components/icon-picker";
 import type { Game, Player } from "@/lib/types";
 
 export default function JoinPage() {
@@ -27,6 +28,7 @@ export default function JoinPage() {
   const [notFound, setNotFound] = useState(false);
 
   const [name, setName] = useState("");
+  const [icon, setIcon] = useState("ball-1.png");
   const [submitting, setSubmitting] = useState(false);
 
   const noop = useCallback(() => {}, []);
@@ -89,7 +91,7 @@ export default function JoinPage() {
     try {
       const { data, error } = await getSupabase()
         .from("players")
-        .insert({ game_id: game.id, name: name.trim() })
+        .insert({ game_id: game.id, name: name.trim(), icon_id: icon })
         .select()
         .single();
       if (error) throw error;
@@ -146,6 +148,11 @@ export default function JoinPage() {
                 onKeyDown={(e) => { if (e.key === "Enter") handleJoin(); }}
                 autoFocus
               />
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-zinc-700">Pick Your Ball</p>
+              <IconPicker selected={icon} onSelect={setIcon} />
             </div>
 
             <Button className="w-full" size="lg" onClick={handleJoin} disabled={!name.trim() || submitting}>

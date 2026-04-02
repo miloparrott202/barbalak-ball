@@ -23,11 +23,16 @@ export function PlayerList({ players, className }: PlayerListProps) {
     <ul className={cn("divide-y divide-zinc-100", className)}>
       {players.map((player) => (
         <li key={player.id} className="flex items-center gap-3 py-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-100 text-sm font-bold text-zinc-600">
-            {player.name.charAt(0).toUpperCase()}
-          </div>
+          {player.icon_id ? (
+            <img src={`/balls/${player.icon_id}`} alt="" className="h-9 w-9 rounded-full object-cover" />
+          ) : (
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-100 text-sm font-bold text-zinc-600">
+              {player.name.charAt(0).toUpperCase()}
+            </div>
+          )}
           <span className="flex-1 text-sm font-medium text-zinc-900 truncate">
             {player.name}
+            {player.is_host && <span className="ml-1 text-xs text-emerald-600">(Host)</span>}
           </span>
         </li>
       ))}

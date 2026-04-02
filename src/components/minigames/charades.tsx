@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { SelectedPlayer } from "@/components/selected-player";
 import type { Player, CurrentRound } from "@/lib/types";
 
 interface CharadesProps {
@@ -20,7 +21,7 @@ export function Charades({ round, players, currentPlayerId, isHost, onAdvance }:
   const actor = players.find((p) => p.id === actorId);
   const phrase = data.phrase as string;
 
-  const [timer, setTimer] = useState(60);
+  const [timer, setTimer] = useState(20);
   const [deciding, setDeciding] = useState(false);
 
   useEffect(() => {
@@ -55,9 +56,7 @@ export function Charades({ round, players, currentPlayerId, isHost, onAdvance }:
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
         <h2 className="text-2xl font-bold text-zinc-900 mb-2">Charades</h2>
-        <p className="text-zinc-500 mb-4">
-          <span className="font-semibold text-zinc-700">{actor?.name}</span> is acting.
-        </p>
+        <SelectedPlayer player={actor} label="Acting" />
 
         {isActor && (
           <div className="mt-4 p-6 rounded-xl bg-zinc-50 border border-zinc-200">
@@ -86,9 +85,7 @@ export function Charades({ round, players, currentPlayerId, isHost, onAdvance }:
         >
           {timer}
         </div>
-        <p className="text-sm text-zinc-500 mb-1">
-          <span className="font-semibold text-zinc-700">{actor?.name}</span> is acting!
-        </p>
+        <SelectedPlayer player={actor} label="Acting" />
 
         {isActor && (
           <div className="mt-6 p-4 rounded-xl bg-zinc-50 border border-zinc-200">
@@ -111,7 +108,7 @@ export function Charades({ round, players, currentPlayerId, isHost, onAdvance }:
   if (phase === "result") {
     const success = data.success as boolean;
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
+      <div className="flex flex-col items-center justify-center px-4 text-center py-8">
         <div
           className={cn(
             "text-6xl mb-4",
@@ -123,9 +120,11 @@ export function Charades({ round, players, currentPlayerId, isHost, onAdvance }:
         <h2 className="text-2xl font-bold text-zinc-900 mb-2">
           {success ? "Nailed It!" : "Not This Time"}
         </h2>
-        <p className="text-zinc-500 mb-2">
-          The phrase was: <span className="font-semibold text-zinc-700">{phrase}</span>
-        </p>
+        {phrase && (
+          <p className="text-zinc-500 mb-2">
+            The phrase was: <span className="font-semibold text-zinc-700">{phrase}</span>
+          </p>
+        )}
         {success && (
           <p className="text-emerald-600 font-semibold">
             +5 pts to {actor?.name}
