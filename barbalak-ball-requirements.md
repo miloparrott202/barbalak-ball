@@ -1,6 +1,6 @@
 # Barbalak-Ball — Master Architectural & Functional Specification
 
-> **Version:** 6.2.0  
+> **Version:** 6.5.0  
 > **Status:** Canonical  
 > **Stack:** Next.js (App Router) · Supabase (Realtime + Postgres) · Vercel  
 > **Content Source:** All generated content lives in `content/*.json`. This document defines mechanics only.
@@ -16,6 +16,7 @@
 5. [Minigame: Fifty Fifty](#5-minigame-fifty-fifty)
 6. [Event: World Event](#6-event-world-event)
 7. [Non-Minigame Event: Fun Fact Interjection](#7-non-minigame-event-fun-fact-interjection)
+7.5. [Special World Event](#75-special-world-event)
 8. [Asset Manifest](#8-asset-manifest)
 9. [Content File Map](#9-content-file-map)
 
@@ -56,6 +57,15 @@
 - **Top-left:** Player's own name.
 - **Top-right:** Player's current point total.
 - **Between minigames:** Full scoreboard — all players sorted descending by points. Displayed for 4 seconds.
+
+### 1.4.1 Loading Screen / House Rules
+
+- A curated list of "House Rules" is defined in `content/loading-screen.json` (`{ "rules": [...] }`).
+- Rules are displayed at the **top** of the screen on:
+  - The **host lobby** page (while waiting for players to join).
+  - The **join waiting screen** (lobby / settings phase, before the game starts).
+- Styled as a prominent amber-bordered card with a numbered list.
+- Rules are purely informational — no interactivity required.
 
 ### 1.5 Branding & Lobby
 
@@ -120,23 +130,41 @@ All game content must follow these rules. They apply to trivia, charades, fifty-
 
 No description popup auto-appears during transitions.
 
-### 1.10 Host Controls (Pause, Skip & Kick)
+### 1.10 Host Controls (Dev Mode Only)
 
-- The host sees a **Pause** button, a **Skip** button, and a **Kick** button in the top-right corner of their play screen.
+- The host sees a **Pause** button, a **Skip** button, a **Kick** button, and a **Correct Points** button in the top-right corner of their play screen.
+- **These controls are ONLY visible when "Dev Mode" is toggled on in settings.** In normal mode, no host controls are shown.
 - **Pause:** Freezes all timers and displays "PAUSED" overlay on all screens. Host taps again to resume.
 - **Skip:** Immediately ends the current minigame round and advances to the scoreboard. No points awarded for the skipped round.
 - **Kick:** Opens a dropdown of non-host players. Selecting a player removes them from the game entirely. Their points are forfeit (reset to 0) and their row is deleted from the `players` table.
-- These buttons are **only visible to the host**.
+- **Correct Points:** Opens a dropdown where the host selects a player and enters a positive or negative point value. This immediately adjusts the selected player's score. Only available in dev mode.
 - All spinning wheels and chance devices must visually land on the actual pre-determined result. The pointer at the top of any wheel must align with the correct segment when the spin completes.
 
 ### 1.10.1 Host HUD
 
 - The host sees the same HUD bar (name + point total + shop access) as joined players. This bar renders at the top of the host play page using the same `<Hud>` component.
 
+### 1.10.2 Dev Mode Toggle
+
+- "Dev Mode" is a toggleable setting in the settings page (listed under events).
+- When enabled: Pause, Skip, Kick, and Correct Points buttons appear on the host play screen.
+- When disabled: None of these host controls are visible. No player can access them.
+
+### 1.10.3 Bullshit Feature
+
+- "Bullshit" is a toggleable setting in the settings page (listed under events).
+- When enabled, a **"Call Bullshit"** button appears in the HUD bar between the player name (left) and points (right) on **every player's device** (host and joined).
+- When any player taps "Call Bullshit":
+  1. The game pauses immediately.
+  2. All devices display a full-screen overlay: **"[Player] has called bullshit."**
+  3. Next to this is an informational tooltip (tap to reveal): "[Player] has called bullshit. They will now make their case against the accused (google shit on their phone). If the defendant is found guilty, they must finish their drink. If the defendant is found innocent, vice versa. If they come to a stalemate, the room decides."
+  4. Only the **host** can dismiss the overlay and resume the game.
+
 ### 1.11 Floating Balls Background
 
 - During every transition/intro screen, ball icons from `public/balls/` float across the background.
 - Balls spawn at random positions outside the viewport edge and drift in a random direction.
+- **Ball size range:** 80–140px (randomized per ball). Balls should be clearly visible on mobile.
 - **Density range:** 3–10 balls visible at once (randomized per transition).
 - **Speed range:** 15–45px/second (randomized per ball).
 - **Direction:** Random angle per ball.
@@ -206,6 +234,8 @@ Charades has two sub-switches on the settings page:
 - **Difficulty reveal:** Before each question, a **spinning wheel** with four segments (Easy 30%, Medium 30%, Hard 30%, Ruinous 10%) spins for ~4 seconds and visually lands on the pre-determined difficulty. The wheel must align with the actual difficulty of the question.
 - **Difficulty visuals (after wheel):** Easy → flash `happy.png`. Medium → flash `medium.png`. Hard → flash `hard.png`. Ruinous → `ruinous-trivia.gif` pops up and fades linearly over 2 seconds while `ruinous.mp3` plays in full. All assets in `content/images/`.
 - **Timer stops on answer:** As soon as a player submits their answer (correct or incorrect), the timer immediately stops at 0.
+- **Answer sync:** When a joined player submits their answer, the result (correct/incorrect, selected option) is written to game state (`data.q{N}_answered`, `data.q{N}_correct`, `data.q{N}_option`). The host reads this from game state so both devices show the same result. This prevents the host showing "Time's up!" when the player actually answered on their device.
+- **Difficulty images** must be served from `public/images/` (e.g., `/images/happy.png`, `/images/medium.png`, `/images/hard.png`, `/images/ruinous-trivia.gif`). Source files are in `content/images/` and must be copied to `public/images/`.
 
 ### 3.3 Scoring
 
@@ -227,13 +257,13 @@ Charades has two sub-switches on the settings page:
 2. Letter + Category displayed on all screens.
 3. 5-second countdown — player thinks of a word starting with the letter.
 4. 15-second defend timer — player verbally defends their word.
-5. All other players vote thumbs up (`yes.png`) or thumbs down (`no.png`) on their phones. Votes are synced in real-time via Supabase INSERT subscription + 1-second polling fallback. As soon as all votes are cast, the timer stops immediately.
+5. All other players vote thumbs up (`yes.png`) or thumbs down (`no.png`) on their phones. Votes are synced in real-time via Supabase INSERT subscription + 500ms polling fallback. When all votes are cast OR the timer expires, the host waits **1.5 seconds** for any in-flight votes to land, then does a final fresh DB query before tallying. This prevents race conditions where a vote is cast at nearly the same time the timer expires.
 6. All phones show who hasn't voted yet. Votes are private until tallied.
 7. Tie goes to the player.
 
 ### 4.2 Wheel of Fate
 
-After voting, "[Player name] must now spin the wheel of fate" appears. The wheel is flashy, Vegas-style. The wheel spins for approximately **7 seconds**. The wheel spins on all players' screens simultaneously — the host writes `scatPhase: "wheel"` to game state, and every client independently renders the same `WheelOfFate` component with the same target outcome, ensuring synchronized animation. The main `phase` stays as `"active"` during wheel and result sub-phases; only `data.scatPhase` changes. Scoring is guarded by a `scatScored` flag to prevent double-awarding.
+After voting, "[Player name] must now spin the wheel of fate" appears. The wheel is flashy, Vegas-style, and sized at **90vw / max 400px** for clear readability on mobile. Text labels are **13px+** and segments use large radii. The wheel spins for approximately **7 seconds**. The wheel spins on all players' screens simultaneously — the host writes `scatPhase: "wheel"` to game state, and every client independently renders the same `WheelOfFate` component with the same target outcome. The `onDone` callback uses a **ref** (not a useEffect dependency) to prevent animation restarts from re-renders. The main `phase` stays as `"active"` during wheel and result sub-phases; only `data.scatPhase` changes. Scoring is guarded by a `scatScored` flag to prevent double-awarding.
 
 **Success wheel (≥50% yes votes):**
 
@@ -265,7 +295,7 @@ After voting, "[Player name] must now spin the wheel of fate" appears. The wheel
 
 1. Select Player (~3 seconds, Vegas slots style).
 2. Penalty or Reward (50/50).
-3. Rarity: Common (50%), Uncommon (30%), Rare (25%), Legendary (5%).
+3. Rarity: Common (50%), Uncommon (35%), Rare (20%), Legendary (5%).
 4. Display action from the selected rarity/type pool on all screens.
 
 All content is defined in `content/fifty-fifty.json` and is directly editable.
@@ -290,7 +320,12 @@ All content is defined in `content/fifty-fifty.json` and is directly editable.
 
 ### 6.1 Trigger
 
-- Between any two minigames, **exactly one** inter-round event fires: either a World Event (50%) or a Fun Fact (50%) — chosen with equal probability. If one type is disabled or exhausted, the other type fires at 50% chance (the remaining 50% = no event).
+- Between any two minigames, a weighted random roll determines what happens:
+  - **30%** — Nothing (skip straight to next minigame)
+  - **35%** — Fun Fact Interjection
+  - **30%** — World Event
+  - **5%** — Special World Event
+- If a selected type is disabled or exhausted, the system falls back to the next available type. If all are disabled, nothing fires.
 
 ### 6.2 Visuals
 
@@ -301,7 +336,7 @@ All content is defined in `content/fifty-fifty.json` and is directly editable.
 
 ### 6.3 Settings Display
 
-- World Events, Fun Fact Interjection, and "Let 'em Fly" appear as event toggles in the settings page.
+- World Events, Fun Fact Interjection, Special World Events, "Let 'em Fly", "Bullshit", and "Dev Mode" appear as event toggles in the settings page.
 - **No descriptions** are shown under any event toggle — label only.
 
 ### 6.4 "Let 'em Fly" Event
@@ -347,6 +382,40 @@ All content is defined in `content/fifty-fifty.json` and is directly editable.
 > Neutron stars are so dense that a teaspoon of their material would weigh about 6 billion tons.  
 > You can fit every other planet in our solar system between the Earth and the Moon.  
 > The inventor of the Pringles can is buried in one.
+
+---
+
+## 7.5 Special World Event
+
+### 7.5.1 Trigger
+
+- 5% chance in the inter-round event roll (see §6.1). Toggleable via "Special World Events" in settings.
+- Special World Events are defined in `content/special-world-events.json`.
+- More special world events may be added in the future.
+
+### 7.5.2 Mechanics
+
+- When a Special World Event fires, the host picks **one random player** as the "target."
+- **Every player except the target** sees the event title and a text description.
+- **The target player** sees only a full-screen image (specified per event) instead of the description.
+- The target does NOT know they are the target — they just see a mysterious image.
+
+### 7.5.3 Visuals
+
+- Distinct from regular World Events: dark purple/gold background, sparkle particle effects, shimmering gold text, and an initial white flash.
+- The "★ Special World Event ★" header uses a gold gradient shimmer animation.
+- If the player is the target, the image is displayed in a gold-bordered pulsing frame.
+- Host sees a "Continue" button to dismiss.
+
+### 7.5.4 Current Events
+
+| ID | Title | Description (non-targets) | Target sees |
+|---|---|---|---|
+| `swe-fregley` | Find the Fregley! | "One player has an image of a Fregley on their phone instead of this description. Start throwing things at him immediately! Empty cans, pillows, rocks, etc. Anything goes." | `fregley.png` |
+
+### 7.5.5 Content Exhaustion
+
+- Subject to the same content exhaustion rules as other events. After all special world events have been used, they cycle.
 
 ---
 
@@ -429,6 +498,8 @@ All generated content lives in `content/`. The requirements doc references mecha
 | `content/fun-facts.json` | Fun facts — flat list, no type categories |
 | `content/shop-items.json` | Point Shop purchasable items |
 | `content/categories.json` | Master registry of all minigames |
+| `content/loading-screen.json` | House Rules displayed on lobby/join waiting screens |
+| `content/special-world-events.json` | Special World Event definitions (title, description, target image) |
 
 ---
 

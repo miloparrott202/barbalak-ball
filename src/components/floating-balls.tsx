@@ -22,7 +22,7 @@ function randomBall(density: number, speedMin: number, speedMax: number): Ball {
   const src = BALL_FILES[Math.floor(Math.random() * BALL_FILES.length)];
   const angle = Math.random() * Math.PI * 2;
   const speed = speedMin + Math.random() * (speedMax - speedMin);
-  const size = 40 + Math.random() * 30;
+  const size = 80 + Math.random() * 60;
   const edge = Math.floor(Math.random() * 4);
   let x: number, y: number;
   switch (edge) {

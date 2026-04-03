@@ -1,6 +1,6 @@
 {
   "categories": [
-    { "id": "sc-1",  "category": "Animals" },
+    { "id": "sc-1",  "category": "African Americans" },
     { "id": "sc-2",  "category": "Countries" },
     { "id": "sc-3",  "category": "Foods" },
     { "id": "sc-4",  "category": "TV shows" },
@@ -11,11 +11,11 @@
     { "id": "sc-9",  "category": "Things you wear" },
     { "id": "sc-10", "category": "Board games" },
     { "id": "sc-11", "category": "Things at a beach" },
-    { "id": "sc-12", "category": "Types of candy" },
+    { "id": "sc-12", "category": "People you would not want to sit next to on an airplane" },
     { "id": "sc-13", "category": "Beverages" },
     { "id": "sc-14", "category": "Car brands" },
     { "id": "sc-15", "category": "Things that fly" },
-    { "id": "sc-16", "category": "Things that are round" },
+    { "id": "sc-16", "category": "Places you should not put your finger" },
     { "id": "sc-17", "category": "Famous people" },
     { "id": "sc-18", "category": "Things in a bathroom" },
     { "id": "sc-19", "category": "Movie titles" },
@@ -25,8 +25,8 @@
     { "id": "sc-23", "category": "Types of shoes" },
     { "id": "sc-24", "category": "Things made of metal" },
     { "id": "sc-25", "category": "Pizza toppings" },
-    { "id": "sc-26", "category": "Dog breeds" },
-    { "id": "sc-27", "category": "Things in a toolbox" },
+    { "id": "sc-26", "category": "Drugs" },
+    { "id": "sc-27", "category": "Things in Milo's room" },
     { "id": "sc-28", "category": "Cities" },
     { "id": "sc-29", "category": "Things that make noise" },
     { "id": "sc-30", "category": "Things you take on vacation" },
@@ -39,7 +39,17 @@
     { "id": "sc-37", "category": "Things that grow" },
     { "id": "sc-38", "category": "Halloween costumes" },
     { "id": "sc-39", "category": "Things in space" },
-    { "id": "sc-40", "category": "Things with wheels" }
+    { "id": "sc-40", "category": "Things with wheels" },
+    { "id": "sc-41", "category": "Things that you would not want to be in a room with" },
+    { "id": "sc-42", "category": "People that you would not want to be in a room with" },
+    { "id": "sc-43", "category": "Someone you would have sex with" },
+    { "id": "sc-44", "category": "Someone you would not have sex with" },
+    { "id": "sc-45", "category": "Things that you would not want to be in a room with" },
+    { "id": "sc-46", "category": "People that you would not want to be in a room with" },
+    { "id": "sc-47", "category": "Someone you would have sex with" },
+    { "id": "sc-48", "category": "Characteristic you would not desire of your uber driver" }, 
+    { "id": "sc-49", "category": "Place you would not want to go hungover" },
+    { "id": "sc-50", "category": "Reason for arrest" }
   ],
   "letters": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "R", "S", "T", "W"]
 }

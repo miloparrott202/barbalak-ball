@@ -57,10 +57,13 @@ function WheelOfFate({
 }) {
   const [rotation, setRotation] = useState(0);
   const [landed, setLanded] = useState(false);
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
 
   useEffect(() => {
     const totalWeight = segments.reduce((s, seg) => s + seg.weight, 0);
     const targetIdx = segments.findIndex((s) => s.label === finalLabel);
+    if (targetIdx < 0) return;
     let cumDeg = 0;
     for (let i = 0; i < targetIdx; i++) {
       cumDeg += (segments[i].weight / totalWeight) * 360;
@@ -68,14 +71,18 @@ function WheelOfFate({
     const segDeg = (segments[targetIdx].weight / totalWeight) * 360;
     const targetDeg = cumDeg + segDeg / 2;
     const finalRot = 360 * 10 + ((270 - targetDeg + 360) % 360);
-    setRotation(finalRot);
+
+    requestAnimationFrame(() => {
+      setRotation(finalRot);
+    });
 
     const timer = setTimeout(() => {
       setLanded(true);
-      setTimeout(onDone, 800);
+      setTimeout(() => onDoneRef.current(), 800);
     }, 7200);
     return () => clearTimeout(timer);
-  }, [segments, finalLabel, onDone]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [segments, finalLabel]);
 
   const totalWeight = segments.reduce((s, seg) => s + seg.weight, 0);
   let startAngle = 0;
@@ -83,23 +90,23 @@ function WheelOfFate({
     const angle = (seg.weight / totalWeight) * 360;
     const endAngle = startAngle + angle;
     const largeArc = angle > 180 ? 1 : 0;
-    const r = 120;
-    const cx = 150, cy = 150;
+    const r = 140;
+    const cx = 160, cy = 160;
     const x1 = cx + r * Math.cos((Math.PI / 180) * startAngle);
     const y1 = cy + r * Math.sin((Math.PI / 180) * startAngle);
     const x2 = cx + r * Math.cos((Math.PI / 180) * endAngle);
     const y2 = cy + r * Math.sin((Math.PI / 180) * endAngle);
     const labelAngle = startAngle + angle / 2;
-    const lx = cx + 70 * Math.cos((Math.PI / 180) * labelAngle);
-    const ly = cy + 70 * Math.sin((Math.PI / 180) * labelAngle);
+    const lx = cx + 85 * Math.cos((Math.PI / 180) * labelAngle);
+    const ly = cy + 85 * Math.sin((Math.PI / 180) * labelAngle);
     const d = `M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc},1 ${x2},${y2} Z`;
     startAngle = endAngle;
     return { d, color: seg.color, label: seg.label, lx, ly, labelAngle };
   });
 
   return (
-    <div className="relative w-72 h-72 mx-auto my-6">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-10 text-yellow-400 text-3xl drop-shadow-lg">
+    <div className="relative w-[90vw] max-w-[400px] aspect-square mx-auto my-4">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-10 text-yellow-400 text-4xl drop-shadow-lg">
         ▼
       </div>
       <div
@@ -110,11 +117,11 @@ function WheelOfFate({
         }}
       />
       <svg
-        viewBox="0 0 300 300"
+        viewBox="0 0 320 320"
         className="w-full h-full drop-shadow-xl"
         style={{
           transform: `rotate(${rotation}deg)`,
-          transition: "transform 7s cubic-bezier(0.17, 0.67, 0.12, 0.99)",
+          transition: rotation > 0 ? "transform 7s cubic-bezier(0.17, 0.67, 0.12, 0.99)" : "none",
         }}
       >
         {paths.map((p) => (
@@ -126,23 +133,23 @@ function WheelOfFate({
               textAnchor="middle"
               dominantBaseline="central"
               fill="white"
-              fontSize="8"
+              fontSize="13"
               fontWeight="bold"
               transform={`rotate(${p.labelAngle}, ${p.lx}, ${p.ly})`}
             >
-              {p.label.length > 18 ? p.label.slice(0, 16) + "…" : p.label}
+              {p.label.length > 20 ? p.label.slice(0, 18) + "…" : p.label}
             </text>
           </g>
         ))}
-        <circle cx="150" cy="150" r="18" fill="#1e293b" stroke="#fbbf24" strokeWidth="3" />
-        <text x="150" y="150" textAnchor="middle" dominantBaseline="central" fill="#fbbf24" fontSize="10" fontWeight="bold">
+        <circle cx="160" cy="160" r="22" fill="#1e293b" stroke="#fbbf24" strokeWidth="3" />
+        <text x="160" y="160" textAnchor="middle" dominantBaseline="central" fill="#fbbf24" fontSize="12" fontWeight="bold">
           FATE
         </text>
       </svg>
       {landed && (
         <div className="absolute inset-0 flex items-center justify-center z-20">
-          <div className="bg-white/95 rounded-xl px-5 py-3 shadow-2xl border-2 border-yellow-400 max-w-[250px] text-center">
-            <p className="text-base font-black text-zinc-900">{finalLabel}</p>
+          <div className="bg-white/95 rounded-xl px-6 py-4 shadow-2xl border-2 border-yellow-400 max-w-[280px] text-center">
+            <p className="text-lg font-black text-zinc-900">{finalLabel}</p>
           </div>
         </div>
       )}
@@ -208,12 +215,13 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
     const roundNum = data.roundNumber as number;
 
     async function fetchVotes() {
-      const { data: voteRows } = await sb
+      const { data: voteRows, error } = await sb
         .from("votes")
-        .select("player_id")
+        .select("voter_id")
         .eq("game_id", gameId)
-        .eq("round_number", roundNum);
-      const ids = (voteRows ?? []).map((v: { player_id: string }) => v.player_id);
+        .eq("round_id", String(roundNum));
+      if (error) return;
+      const ids = (voteRows ?? []).map((v: { voter_id: string }) => v.voter_id);
       setVotedPlayerIds(ids);
       setVoteCount(ids.length);
     }
@@ -229,7 +237,7 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
       )
       .subscribe();
 
-    const pollInterval = setInterval(fetchVotes, 1000);
+    const pollInterval = setInterval(fetchVotes, 500);
 
     return () => {
       sb.removeChannel(channel);
@@ -242,43 +250,24 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
     setTotalVoters(voters.length);
   }, [players, hotSeatId]);
 
-  useEffect(() => {
-    if (scatPhase !== "defend" || !isHost) return;
+  const doTally = useCallback(async () => {
     if (tallyCalledRef.current) return;
-
-    const allVoted = voteCount >= totalVoters && totalVoters > 0;
-    const timedOut = defendTimer === 0;
-
-    if (allVoted || timedOut) {
-      tallyCalledRef.current = true;
-      if (defendTimerRef.current) {
-        clearInterval(defendTimerRef.current);
-        defendTimerRef.current = undefined;
-      }
-      setDefendTimer(0);
-      handleTallyVotes();
+    tallyCalledRef.current = true;
+    if (defendTimerRef.current) {
+      clearInterval(defendTimerRef.current);
+      defendTimerRef.current = undefined;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defendTimer, voteCount, totalVoters, scatPhase, isHost]);
+    setDefendTimer(0);
 
-  const handleVote = useCallback(async (approve: boolean) => {
-    if (myVote !== null) return;
-    setMyVote(approve);
     const sb = getSupabase();
-    await sb.from("votes").insert({
-      game_id: gameId,
-      player_id: currentPlayerId,
-      round_number: data.roundNumber as number,
-      vote: approve,
-    });
-  }, [myVote, gameId, currentPlayerId, data.roundNumber]);
+    const roundNum = data.roundNumber as number;
 
-  const handleTallyVotes = useCallback(async () => {
-    const sb = getSupabase();
+    await new Promise((r) => setTimeout(r, 1500));
+
     const { data: votes } = await sb.from("votes")
       .select("vote")
       .eq("game_id", gameId)
-      .eq("round_number", data.roundNumber as number);
+      .eq("round_id", String(roundNum));
 
     const yesVotes = (votes ?? []).filter((v: { vote: boolean }) => v.vote).length;
     const totalCast = (votes ?? []).length;
@@ -296,9 +285,37 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
       noVotes,
       wheelOutcome: outcome.label,
       wheelPoints: outcome.points,
-      wheelStartedAt: new Date().toISOString(),
     });
   }, [gameId, data.roundNumber, totalVoters, onAdvance]);
+
+  useEffect(() => {
+    if (scatPhase !== "defend" || !isHost) return;
+    if (tallyCalledRef.current) return;
+
+    const allVoted = voteCount >= totalVoters && totalVoters > 0;
+    const timedOut = defendTimer === 0;
+
+    if (allVoted || timedOut) {
+      doTally();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defendTimer, voteCount, totalVoters, scatPhase, isHost]);
+
+  const handleVote = useCallback(async (approve: boolean) => {
+    if (myVote !== null) return;
+    setMyVote(approve);
+    const sb = getSupabase();
+    const { error } = await sb.from("votes").insert({
+      game_id: gameId,
+      voter_id: currentPlayerId,
+      round_id: String(data.roundNumber as number),
+      vote: approve,
+    });
+    if (error) {
+      console.error("Vote insert failed:", error);
+      setMyVote(null);
+    }
+  }, [myVote, gameId, currentPlayerId, data.roundNumber]);
 
   const notVotedPlayers = useMemo(() => {
     return players.filter((p) => p.id !== hotSeatId && !votedPlayerIds.includes(p.id));

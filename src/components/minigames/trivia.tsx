@@ -42,6 +42,8 @@ function DifficultyWheel({
 }) {
   const [rotation, setRotation] = useState(0);
   const [landed, setLanded] = useState(false);
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
 
   useEffect(() => {
     const segments = DIFFICULTY_WHEEL_SEGMENTS;
@@ -49,6 +51,7 @@ function DifficultyWheel({
     const targetIdx = segments.findIndex(
       (s) => s.label.toLowerCase() === targetDifficulty.toLowerCase(),
     );
+    if (targetIdx < 0) return;
     let cumDeg = 0;
     for (let i = 0; i < targetIdx; i++) {
       cumDeg += (segments[i].weight / totalWeight) * 360;
@@ -56,14 +59,18 @@ function DifficultyWheel({
     const segDeg = (segments[targetIdx].weight / totalWeight) * 360;
     const targetDeg = cumDeg + segDeg / 2;
     const finalRot = 360 * 8 + ((270 - targetDeg + 360) % 360);
-    setRotation(finalRot);
+
+    requestAnimationFrame(() => {
+      setRotation(finalRot);
+    });
 
     const timer = setTimeout(() => {
       setLanded(true);
-      setTimeout(onDone, 600);
+      setTimeout(() => onDoneRef.current(), 600);
     }, 4200);
     return () => clearTimeout(timer);
-  }, [targetDifficulty, onDone]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetDifficulty]);
 
   const totalWeight = DIFFICULTY_WHEEL_SEGMENTS.reduce((s, seg) => s + seg.weight, 0);
   let startAngle = 0;
@@ -71,31 +78,31 @@ function DifficultyWheel({
     const angle = (seg.weight / totalWeight) * 360;
     const endAngle = startAngle + angle;
     const largeArc = angle > 180 ? 1 : 0;
-    const r = 100;
-    const cx = 120, cy = 120;
+    const r = 130;
+    const cx = 150, cy = 150;
     const x1 = cx + r * Math.cos((Math.PI / 180) * startAngle);
     const y1 = cy + r * Math.sin((Math.PI / 180) * startAngle);
     const x2 = cx + r * Math.cos((Math.PI / 180) * endAngle);
     const y2 = cy + r * Math.sin((Math.PI / 180) * endAngle);
     const labelAngle = startAngle + angle / 2;
-    const lx = cx + 60 * Math.cos((Math.PI / 180) * labelAngle);
-    const ly = cy + 60 * Math.sin((Math.PI / 180) * labelAngle);
+    const lx = cx + 80 * Math.cos((Math.PI / 180) * labelAngle);
+    const ly = cy + 80 * Math.sin((Math.PI / 180) * labelAngle);
     const d = `M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc},1 ${x2},${y2} Z`;
     startAngle = endAngle;
     return { d, color: seg.color, label: seg.label, lx, ly, labelAngle };
   });
 
   return (
-    <div className="relative w-60 h-60 mx-auto my-4">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-10 text-yellow-400 text-2xl drop-shadow-lg">
+    <div className="relative w-[80vw] max-w-[340px] aspect-square mx-auto my-4">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-10 text-yellow-400 text-3xl drop-shadow-lg">
         ▼
       </div>
       <svg
-        viewBox="0 0 240 240"
+        viewBox="0 0 300 300"
         className="w-full h-full drop-shadow-xl"
         style={{
           transform: `rotate(${rotation}deg)`,
-          transition: "transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)",
+          transition: rotation > 0 ? "transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)" : "none",
         }}
       >
         {paths.map((p) => (
@@ -107,7 +114,7 @@ function DifficultyWheel({
               textAnchor="middle"
               dominantBaseline="central"
               fill="white"
-              fontSize="11"
+              fontSize="16"
               fontWeight="bold"
               transform={`rotate(${p.labelAngle}, ${p.lx}, ${p.ly})`}
             >
@@ -115,12 +122,12 @@ function DifficultyWheel({
             </text>
           </g>
         ))}
-        <circle cx="120" cy="120" r="16" fill="#1e293b" stroke="#fbbf24" strokeWidth="2" />
+        <circle cx="150" cy="150" r="20" fill="#1e293b" stroke="#fbbf24" strokeWidth="2" />
       </svg>
       {landed && (
         <div className="absolute inset-0 flex items-center justify-center z-20">
           <div className="bg-white/95 rounded-xl px-5 py-2 shadow-2xl border-2 border-yellow-400 text-center">
-            <p className="text-lg font-black text-zinc-900 capitalize">{targetDifficulty}</p>
+            <p className="text-xl font-black text-zinc-900 capitalize">{targetDifficulty}</p>
           </div>
         </div>
       )}
@@ -140,6 +147,10 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
   const isSelected = currentPlayerId === selectedId;
   const selectedPlayer = players.find((p) => p.id === selectedId);
 
+  const remoteAnswer = data[`q${currentQ}_answered`] as boolean | undefined;
+  const remoteCorrect = data[`q${currentQ}_correct`] as boolean | undefined;
+  const remoteOption = data[`q${currentQ}_option`] as number | undefined;
+
   const [timer, setTimer] = useState(15);
   const [answered, setAnswered] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
@@ -154,6 +165,14 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
   const [showDifficultyWheel, setShowDifficultyWheel] = useState(false);
   const [showRulesPopup, setShowRulesPopup] = useState(false);
   const timerIntervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
+
+  useEffect(() => {
+    if (remoteAnswer && !answered) {
+      setAnswered(true);
+      if (remoteOption !== undefined) setSelected(remoteOption);
+      if (remoteCorrect === false && Math.random() < 0.1) setRoastMsg(true);
+    }
+  }, [remoteAnswer, remoteCorrect, remoteOption, answered]);
 
   useEffect(() => {
     if (!question) return;
@@ -216,6 +235,7 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
       setSelected(optionOriginalIdx);
       const isCorrect = optionOriginalIdx === question.answer;
       if (!isCorrect && Math.random() < 0.1) setRoastMsg(true);
+
       await getSupabase().from("answers").insert({
         game_id: gameId,
         player_id: currentPlayerId,
@@ -223,8 +243,14 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
         selected_option: optionOriginalIdx,
         is_correct: isCorrect,
       });
+
+      onAdvance("active", {
+        [`q${currentQ}_answered`]: true,
+        [`q${currentQ}_correct`]: isCorrect,
+        [`q${currentQ}_option`]: optionOriginalIdx,
+      });
     },
-    [answered, question, gameId, currentPlayerId],
+    [answered, question, gameId, currentPlayerId, currentQ, onAdvance],
   );
 
   if (phase === "staging") {
@@ -270,7 +296,7 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
     }
 
     const showResult = answered || timer === 0;
-    const isCorrect = selected === question.answer;
+    const isCorrect = selected !== null ? selected === question.answer : (remoteCorrect ?? false);
 
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 relative">
@@ -352,12 +378,14 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
             <div className="grid grid-cols-1 gap-3">
               {shuffledOptions.map((opt) => {
                 const isCorrectAnswer = opt.originalIdx === question.answer;
+                const isRemoteSelected = remoteOption === opt.originalIdx;
                 return (
                   <div
                     key={opt.originalIdx}
                     className={cn(
                       "rounded-lg border px-4 py-3 text-left text-sm font-medium",
                       showResult && isCorrectAnswer && "border-emerald-500 bg-emerald-50 text-emerald-700",
+                      showResult && isRemoteSelected && !isCorrectAnswer && "border-red-500 bg-red-50 text-red-700",
                       !showResult && "border-zinc-200 text-zinc-800",
                     )}
                   >
@@ -396,9 +424,10 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
           {isHost && showResult && (
             <div className="mt-6 flex justify-center">
               <Button onClick={() => {
+                const qCorrect = remoteAnswer ? (remoteCorrect ?? false) : isCorrect;
                 const newScores = [
                   ...resultScores,
-                  { playerId: selectedId, correct: isCorrect, roast: roastMsg },
+                  { playerId: selectedId, correct: qCorrect, roast: roastMsg },
                 ];
                 setResultScores(newScores);
 
@@ -406,8 +435,6 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
                   onAdvance("active", {
                     currentQ: currentQ + 1,
                     resultScores: newScores,
-                    [`q${currentQ}_correct`]: isCorrect,
-                    [`q${currentQ}_playerId`]: selectedId,
                   });
                   setTimer(15);
                   setAnswered(false);
@@ -415,8 +442,6 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
                 } else {
                   onAdvance("result", {
                     resultScores: newScores,
-                    [`q${currentQ}_correct`]: isCorrect,
-                    [`q${currentQ}_playerId`]: selectedId,
                   });
                 }
               }}>

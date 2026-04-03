@@ -21,10 +21,10 @@ import { shopItems } from "@/lib/content";
 
 import type { Game, Player, CurrentRound, TriviaQuestion } from "@/lib/types";
 
-import { Pause, Play, SkipForward, UserX } from "lucide-react";
+import { Pause, Play, SkipForward, UserX, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Hud } from "@/components/hud";
+import { Hud, BullshitOverlay } from "@/components/hud";
 import { Scoreboard } from "@/components/scoreboard";
 import { Transition } from "@/components/transition";
 import { FloatingBalls } from "@/components/floating-balls";
@@ -34,6 +34,7 @@ import { Scategories } from "@/components/minigames/scategories";
 import { FiftyFifty } from "@/components/minigames/fifty-fifty";
 import { WorldEventCard } from "@/components/events/world-event";
 import { FunFactCard } from "@/components/events/fun-fact";
+import { SpecialWorldEventCard } from "@/components/events/special-world-event";
 
 export default function HostPlayPage() {
   const { shortCode } = useParams<{ shortCode: string }>();
@@ -50,7 +51,11 @@ export default function HostPlayPage() {
   const [hostPhrase2, setHostPhrase2] = useState("");
   const [hostPhrasesSubmitted, setHostPhrasesSubmitted] = useState(false);
   const [kickMenuOpen, setKickMenuOpen] = useState(false);
+  const [correctPtsOpen, setCorrectPtsOpen] = useState(false);
+  const [correctPtsPlayer, setCorrectPtsPlayer] = useState<string>("");
+  const [correctPtsAmount, setCorrectPtsAmount] = useState("");
   const notifTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const triviaScoredRef = useRef(false);
 
   const gameRef = useRef<Game | null>(null);
   const playersRef = useRef<Player[]>([]);
@@ -175,18 +180,19 @@ export default function HostPlayPage() {
 
     const newRoundNum = g.round_number + 1;
     round.data.roundNumber = newRoundNum;
+    triviaScoredRef.current = false;
     await getSupabase().from("games").update({ round_number: newRoundNum }).eq("id", g.id);
     await updateGameRound(g.id, round);
   }, []);
 
   const startNextRound = useCallback(async () => {
     const g = gameRef.current;
-    const pl = playersRef.current;
     if (!g) return;
     setRoundBusy(true);
 
     const executed = await executePendingPurchases(g.id);
     if (executed.length > 0) {
+      const pl = playersRef.current;
       const msgs = executed.map((e) => {
         const buyer = pl.find((p) => p.id === e.buyer);
         const item = shopItems.find((i) => i.id === e.item);
@@ -201,17 +207,40 @@ export default function HostPlayPage() {
     const enabledIds = g.enabled_categories ?? [];
     const usedWE = await getUsedContent(g.id, "world-event");
     const usedFF = await getUsedContent(g.id, "fun-fact");
-    const event = rollInterRoundEvent(enabledIds, usedWE, usedFF);
+    const usedSWE = await getUsedContent(g.id, "special-world-event");
+    const event = rollInterRoundEvent(enabledIds, usedWE, usedFF, usedSWE);
 
     if (event) {
       await markContentUsed(g.id, event.type, event.id);
+
+      if (event.type === "special-world-event") {
+        const pl = playersRef.current;
+        const targetPlayer = pl[Math.floor(Math.random() * pl.length)];
+        await updateGameRound(g.id, {
+          minigame: g.current_round?.minigame ?? "charades",
+          phase: "event",
+          selectedPlayerIds: [],
+          data: {
+            eventType: "special-world-event",
+            eventId: event.id,
+            sweTitle: event.title,
+            sweDescription: event.description,
+            sweTargetImage: event.targetImage,
+            sweTargetPlayerId: targetPlayer.id,
+          },
+          startedAt: new Date().toISOString(),
+        });
+        setRoundBusy(false);
+        return;
+      }
+
       await updateGameRound(g.id, {
         minigame: g.current_round?.minigame ?? "charades",
         phase: "event",
         selectedPlayerIds: [],
         data: {
           eventType: event.type,
-          eventText: event.text,
+          eventText: event.type === "world-event" || event.type === "fun-fact" ? event.text : "",
           eventId: event.id,
         },
         startedAt: new Date().toISOString(),
@@ -242,7 +271,8 @@ export default function HostPlayPage() {
         await markContentUsed(g.id, "charades", r.data.phraseId as string);
       }
 
-      if (r.minigame === "trivia" && phase === "result" && !r.data.triviaScored) {
+      if (r.minigame === "trivia" && phase === "result" && !triviaScoredRef.current) {
+        triviaScoredRef.current = true;
         const scores = (extraData?.resultScores ?? updatedData.resultScores) as
           { playerId: string; correct: boolean }[] | undefined;
         if (scores) {
@@ -308,6 +338,36 @@ export default function HostPlayPage() {
     showNotification("Player removed");
   }, [showNotification]);
 
+  const handleCorrectPoints = useCallback(async () => {
+    if (!correctPtsPlayer || !correctPtsAmount) return;
+    const amount = parseInt(correctPtsAmount, 10);
+    if (isNaN(amount)) return;
+    await addScore(correctPtsPlayer, amount);
+    const g = gameRef.current;
+    if (g) {
+      const sb = getSupabase();
+      const { data: fresh } = await sb.from("players").select("*").eq("game_id", g.id).order("created_at", { ascending: true });
+      if (fresh) setPlayers(fresh as Player[]);
+    }
+    const p = playersRef.current.find((pl) => pl.id === correctPtsPlayer);
+    showNotification(`${amount >= 0 ? "+" : ""}${amount} pts to ${p?.name ?? "?"}`);
+    setCorrectPtsOpen(false);
+    setCorrectPtsPlayer("");
+    setCorrectPtsAmount("");
+  }, [correctPtsPlayer, correctPtsAmount, showNotification]);
+
+  const handleDismissBullshit = useCallback(async () => {
+    const g = gameRef.current;
+    if (!g?.current_round) return;
+    const newData = { ...g.current_round.data };
+    delete newData.bullshitActive;
+    delete newData.bullshitCaller;
+    delete newData.bullshitCallerName;
+    newData.paused = false;
+    setPaused(false);
+    await updateGameRound(g.id, { ...g.current_round, data: newData });
+  }, []);
+
   const handleTransitionDone = useCallback(() => {
     handleAdvance("staging");
   }, [handleAdvance]);
@@ -358,6 +418,11 @@ export default function HostPlayPage() {
       </main>
     );
   }
+
+  const enabledIds = game.enabled_categories ?? [];
+  const devMode = enabledIds.includes("dev-mode");
+  const bullshitEnabled = enabledIds.includes("bullshit");
+  const bullshitActive = game.current_round?.data?.bullshitActive as boolean;
 
   if (collectingPhrases) {
     const submittedCount = (game.current_round?.data?.submittedPlayers as string[] ?? []).length;
@@ -420,13 +485,13 @@ export default function HostPlayPage() {
     );
   }
 
-  const letEmFly = (game.enabled_categories ?? []).includes("let-em-fly");
+  const letEmFly = enabledIds.includes("let-em-fly");
   const round = game.current_round;
 
   if (!round || round.phase === "scoreboard") {
     return (
       <main className="flex flex-1 flex-col items-center justify-center px-4 pt-14">
-        {hostPlayer && <Hud player={hostPlayer} allPlayers={players} gameId={game.id} />}
+        {hostPlayer && <Hud player={hostPlayer} allPlayers={players} gameId={game.id} bullshitEnabled={bullshitEnabled} game={game} />}
         {letEmFly && <FloatingBalls />}
         {notification && (
           <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 rounded-lg bg-zinc-900 text-white px-4 py-2 text-sm font-medium shadow-lg animate-fade-in">
@@ -447,6 +512,18 @@ export default function HostPlayPage() {
 
   if (round.phase === "event") {
     const eventType = round.data.eventType as string;
+    if (eventType === "special-world-event") {
+      return (
+        <SpecialWorldEventCard
+          title={round.data.sweTitle as string}
+          description={round.data.sweDescription as string}
+          targetImage={round.data.sweTargetImage as string}
+          isTarget={hostPlayerId === (round.data.sweTargetPlayerId as string)}
+          isHost
+          onDismiss={handleEventDismiss}
+        />
+      );
+    }
     const eventText = round.data.eventText as string;
     if (eventType === "world-event") {
       return <WorldEventCard event={eventText} isHost onDismiss={handleEventDismiss} />;
@@ -472,7 +549,7 @@ export default function HostPlayPage() {
     onAdvance: handleAdvance,
   };
 
-  const showHostControls = ["staging", "active", "result"].includes(round.phase);
+  const showHostControls = devMode && ["staging", "active", "result"].includes(round.phase);
 
   const showContinue = (() => {
     if (round.minigame === "scategories") {
@@ -485,8 +562,16 @@ export default function HostPlayPage() {
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-4 relative pt-14">
-      {hostPlayer && <Hud player={hostPlayer} allPlayers={players} gameId={game.id} />}
+      {hostPlayer && <Hud player={hostPlayer} allPlayers={players} gameId={game.id} bullshitEnabled={bullshitEnabled} game={game} />}
       {letEmFly && <FloatingBalls />}
+
+      {bullshitActive && (
+        <BullshitOverlay
+          callerName={round.data.bullshitCallerName as string ?? "Someone"}
+          isHost
+          onDismiss={handleDismissBullshit}
+        />
+      )}
 
       {showHostControls && (
         <div className="fixed top-12 right-3 z-50 flex items-center gap-2">
@@ -526,10 +611,43 @@ export default function HostPlayPage() {
               </div>
             )}
           </div>
+          <div className="relative">
+            <button
+              onClick={() => setCorrectPtsOpen(!correctPtsOpen)}
+              className="flex items-center gap-1 rounded-lg bg-amber-600 text-white px-3 py-1.5 text-xs font-medium hover:bg-amber-500 transition-colors"
+            >
+              <Wrench className="h-3.5 w-3.5" />
+              Pts
+            </button>
+            {correctPtsOpen && (
+              <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-lg shadow-xl border border-zinc-200 p-3 z-50">
+                <select
+                  className="w-full mb-2 rounded border border-zinc-200 px-2 py-1.5 text-sm"
+                  value={correctPtsPlayer}
+                  onChange={(e) => setCorrectPtsPlayer(e.target.value)}
+                >
+                  <option value="">Select player</option>
+                  {players.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                <Input
+                  type="number"
+                  placeholder="Points (+/-)"
+                  value={correctPtsAmount}
+                  onChange={(e) => setCorrectPtsAmount(e.target.value)}
+                  className="mb-2"
+                />
+                <Button size="sm" className="w-full" onClick={handleCorrectPoints}>
+                  Apply
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {paused && (
+      {paused && !bullshitActive && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
           <h1 className="text-5xl font-black text-white tracking-widest">PAUSED</h1>
         </div>

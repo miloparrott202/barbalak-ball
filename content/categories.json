@@ -52,8 +52,32 @@
     "type": "event"
   },
   {
+    "id": "special-world-events",
+    "label": "Special World Events",
+    "description": "",
+    "dataFile": "special-world-events.json",
+    "enabled": true,
+    "type": "event"
+  },
+  {
     "id": "let-em-fly",
     "label": "Let 'em Fly",
+    "description": "",
+    "dataFile": "",
+    "enabled": false,
+    "type": "event"
+  },
+  {
+    "id": "bullshit",
+    "label": "Bullshit",
+    "description": "",
+    "dataFile": "",
+    "enabled": false,
+    "type": "event"
+  },
+  {
+    "id": "dev-mode",
+    "label": "Dev Mode",
     "description": "",
     "dataFile": "",
     "enabled": false,

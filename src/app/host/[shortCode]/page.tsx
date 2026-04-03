@@ -12,6 +12,7 @@ import { IconPicker } from "@/components/icon-picker";
 import type { Player } from "@/lib/types";
 import { QRDisplay } from "@/components/qr-display";
 import { CopyLink } from "@/components/copy-link";
+import { loadingScreenRules } from "@/lib/content";
 
 export default function HostLobbyPage() {
   const { shortCode } = useParams<{ shortCode: string }>();
@@ -154,6 +155,15 @@ export default function HostLobbyPage() {
           <h1 className="text-3xl font-bold tracking-tight text-zinc-900">
             {shortCode}
           </h1>
+        </div>
+
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-left space-y-1.5">
+          <p className="text-xs font-bold uppercase tracking-wider text-amber-700">House Rules</p>
+          <ol className="list-decimal list-inside space-y-1">
+            {loadingScreenRules.map((rule, i) => (
+              <li key={i} className="text-sm text-amber-900 leading-snug">{rule}</li>
+            ))}
+          </ol>
         </div>
 
         <Card>

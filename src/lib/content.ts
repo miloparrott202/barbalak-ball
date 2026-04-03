@@ -16,6 +16,8 @@ import worldEventsData from "../../content/world-events.json";
 import funFactsData from "../../content/fun-facts.json";
 import shopItemsData from "../../content/shop-items.json";
 import categoriesData from "../../content/categories.json";
+import loadingScreenData from "../../content/loading-screen.json";
+import specialWorldEventsData from "../../content/special-world-events.json";
 
 export const charades = charadesData as CharadesPhrase[];
 
@@ -37,6 +39,16 @@ export const categories = categoriesData as Array<{
   dataFile?: string;
   subcategories?: Array<{ id: string; label: string; dataFile: string; enabled: boolean }>;
 }>;
+
+export const loadingScreenRules = (loadingScreenData as { rules: string[] }).rules;
+
+export interface SpecialWorldEvent {
+  id: string;
+  title: string;
+  description: string;
+  targetImage: string;
+}
+export const specialWorldEvents = specialWorldEventsData as SpecialWorldEvent[];
 
 export function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];

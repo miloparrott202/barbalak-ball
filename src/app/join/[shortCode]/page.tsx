@@ -4,11 +4,11 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import { Loader2, CheckCircle2, Info } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
-import { categories as allCategories } from "@/lib/content";
+import { categories as allCategories, loadingScreenRules } from "@/lib/content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Hud } from "@/components/hud";
+import { Hud, BullshitOverlay } from "@/components/hud";
 import { Scoreboard } from "@/components/scoreboard";
 import { Transition } from "@/components/transition";
 import { Charades } from "@/components/minigames/charades";
@@ -17,6 +17,7 @@ import { Scategories } from "@/components/minigames/scategories";
 import { FiftyFifty } from "@/components/minigames/fifty-fifty";
 import { WorldEventCard } from "@/components/events/world-event";
 import { FunFactCard } from "@/components/events/fun-fact";
+import { SpecialWorldEventCard } from "@/components/events/special-world-event";
 import { IconPicker } from "@/components/icon-picker";
 import { FloatingBalls } from "@/components/floating-balls";
 import { MinigameDescriptionPopup } from "@/components/minigame-description";
@@ -211,10 +212,22 @@ export default function JoinPage() {
 
   if (game.status === "lobby" || game.status === "settings") {
     return (
-      <main className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+      <main className="flex flex-1 flex-col items-center px-6 text-center pt-6">
         {descPopup && (
           <MinigameDescriptionPopup minigame={descPopup} onClose={() => setDescPopup(null)} />
         )}
+
+        <div className="w-full max-w-xs mb-6">
+          <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-left space-y-1.5">
+            <p className="text-xs font-bold uppercase tracking-wider text-amber-700">House Rules</p>
+            <ol className="list-decimal list-inside space-y-1">
+              {loadingScreenRules.map((rule, i) => (
+                <li key={i} className="text-sm text-amber-900 leading-snug">{rule}</li>
+              ))}
+            </ol>
+          </div>
+        </div>
+
         <div className="space-y-4">
           <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" />
           <h1 className="text-2xl font-bold text-zinc-900">You&apos;re In!</h1>
@@ -310,11 +323,21 @@ export default function JoinPage() {
   }
 
   const letEmFly = (game.enabled_categories ?? []).includes("let-em-fly");
+  const bullshitEnabled = (game.enabled_categories ?? []).includes("bullshit");
+  const bullshitActive = round?.data?.bullshitActive as boolean;
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-4 pt-14">
       {letEmFly && <FloatingBalls />}
-      <Hud player={myPlayer} allPlayers={allPlayers} gameId={game.id} />
+      <Hud player={myPlayer} allPlayers={allPlayers} gameId={game.id} bullshitEnabled={bullshitEnabled} game={game} />
+
+      {bullshitActive && (
+        <BullshitOverlay
+          callerName={round?.data?.bullshitCallerName as string ?? "Someone"}
+          isHost={false}
+          onDismiss={() => {}}
+        />
+      )}
 
       {(!round || round.phase === "scoreboard") && (
         <div>
@@ -324,7 +347,16 @@ export default function JoinPage() {
       )}
 
       {round?.phase === "event" && (
-        round.data.eventType === "world-event" ? (
+        round.data.eventType === "special-world-event" ? (
+          <SpecialWorldEventCard
+            title={round.data.sweTitle as string}
+            description={round.data.sweDescription as string}
+            targetImage={round.data.sweTargetImage as string}
+            isTarget={myPlayer.id === (round.data.sweTargetPlayerId as string)}
+            isHost={false}
+            onDismiss={noop}
+          />
+        ) : round.data.eventType === "world-event" ? (
           <WorldEventCard event={round.data.eventText as string} isHost={false} onDismiss={noop} />
         ) : (
           <FunFactCard
@@ -345,7 +377,7 @@ export default function JoinPage() {
             <Charades round={round} players={allPlayers} currentPlayerId={myPlayer.id} isHost={false} onAdvance={handleAdvance} />
           )}
           {round.minigame === "trivia" && (
-            <Trivia round={round} players={allPlayers} currentPlayerId={myPlayer.id} isHost={false} gameId={game.id} onAdvance={noop} />
+            <Trivia round={round} players={allPlayers} currentPlayerId={myPlayer.id} isHost={false} gameId={game.id} onAdvance={handleAdvance} />
           )}
           {round.minigame === "scategories" && (
             <Scategories round={round} players={allPlayers} currentPlayerId={myPlayer.id} isHost={false} gameId={game.id} onAdvance={handleAdvance} />

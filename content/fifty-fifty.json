@@ -1,35 +1,38 @@
 {
   "penalties": {
     "common": [
-      { "id": "pc-1", "action": "Swig ya drink" },
-      { "id": "pc-2", "action": "Take 3 sips of ya drink" }
+      { "id": "pc-1", "action": "Swig Ya Drink: Swig ya drink, gangsta. And consider yourself lucky." },
+      { "id": "pc-2", "action": "Triple Threat: Take 3 sips of ya drink" }
     ],
     "uncommon": [
-      { "id": "pu-1", "action": "Take 5 sips of ya drink" },
-      { "id": "pu-2", "action": "Run outside and scream as loud as you can." }
+      { "id": "pu-1", "action": "Commence Suckdown: Take 5 sips of ya drink" },
+      { "id": "pu-2", "action": "Banshee: Run outside and scream as loud as you can." }
     ],
     "rare": [
-      { "id": "pr-1", "action": "Finish your drink" },
-      { "id": "pr-2", "action": "Roll around on the floor and oink like a pig" },
-      { "id": "pr-3", "action": "The people immediately to your left and right are going to punch you. Now! Get him!" }
+      { "id": "pr-1", "action": "Finisher: Finish your drink" },
+      { "id": "pr-2", "action": "Mudslide: Roll around on the floor and oink like a pig" },
+      { "id": "pr-3", "action": "All Angles: The people immediately to your left and right are going to punch you. Now! Get him!" }
     ],
     "legendary": [
-      { "id": "pl-1", "action": "Back to back double shotgun" }
+      { "id": "pl-1", "action": "The Tummy Rumbler: Back to back double shotgun" }
     ]
   },
   "rewards": {
     "common": [
-      { "id": "rc-1", "action": "Make 2 people drink" },
-      { "id": "rc-2", "action": "Make one person drink twice" }
+      { "id": "rc-1", "action": "Two-for-One: Make 2 people drink" },
+      { "id": "rc-2", "action": "Double Duty: Make one person drink twice" }
     ],
     "uncommon": [
-      { "id": "ru-1", "action": "Make one person take a handle pull" }
+      { "id": "ru-1", "action": "Throat Force Action Move: Make one person take a handle sucker." }
     ],
     "rare": [
-      { "id": "rr-1", "action": "Take anyone's drink and call them a good boy for handing it over." }
+      { "id": "rr-1", "action": "Fief Lord:Take anyone's drink and call them a good boy for handing it over." },
+      { "id": "rr-2", "action": "Super Tane Ability Version Four: Make anyone named Tane pull handle. Unless you're Tane - in that case EVERYONE ELSE pulls handle. If no one's named Tane you're playing the game wrong." }
+
     ],
     "legendary": [
-      { "id": "rl-1", "action": "Make another player take a big 'effin swig from the handle. And I do mean big." }
+      { "id": "rl-1", "action": "Slaughter: Make another player take a big 'effin swig from the handle. And I DO mean big." },
+      { "id": "rl-2", "action": "Exempt Status: Everyone but you finishes their drink." }
     ]
   }
 }

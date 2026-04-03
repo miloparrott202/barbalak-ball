@@ -7,6 +7,7 @@ import {
   fiftyFifty,
   worldEvents,
   funFacts,
+  specialWorldEvents,
   pickRandom,
   shuffleArray,
   weightedRandom,
@@ -128,8 +129,8 @@ export function buildFiftyFiftyRound(players: Player[]): CurrentRound {
   const type: "penalty" | "reward" = Math.random() < 0.5 ? "penalty" : "reward";
   const rarity: FiftyFiftyRarity = weightedRandom([
     { value: "common" as const, weight: 50 },
-    { value: "uncommon" as const, weight: 30 },
-    { value: "rare" as const, weight: 25 },
+    { value: "uncommon" as const, weight: 35 },
+    { value: "rare" as const, weight: 20 },
     { value: "legendary" as const, weight: 5 },
   ]);
 
@@ -167,43 +168,75 @@ export function rollFunFact(usedIds: string[]): { id: string; text: string } | n
   return { id: fact.id, text: fact.text };
 }
 
+export function rollSpecialWorldEvent(
+  usedIds: string[],
+): { id: string; title: string; description: string; targetImage: string } | null {
+  const available = specialWorldEvents.filter((e) => !usedIds.includes(e.id));
+  const pool = available.length > 0 ? available : specialWorldEvents;
+  if (pool.length === 0) return null;
+  return pickRandom(pool);
+}
+
+type InterRoundResult =
+  | { type: "world-event"; id: string; text: string }
+  | { type: "fun-fact"; id: string; text: string }
+  | { type: "special-world-event"; id: string; title: string; description: string; targetImage: string }
+  | null;
+
 export function rollInterRoundEvent(
   enabledIds: string[],
   usedWEIds: string[],
   usedFFIds: string[],
-): { type: "world-event"; id: string; text: string } | { type: "fun-fact"; id: string; text: string } | null {
+  usedSWEIds: string[] = [],
+): InterRoundResult {
   const weEnabled = enabledIds.includes("world-events");
   const ffEnabled = enabledIds.includes("fun-facts");
-  if (!weEnabled && !ffEnabled) return null;
+  const sweEnabled = enabledIds.includes("special-world-events");
+  if (!weEnabled && !ffEnabled && !sweEnabled) return null;
 
-  if (weEnabled && ffEnabled) {
-    if (Math.random() < 0.5) {
-      const we = rollWorldEvent(usedWEIds);
-      if (we) return { type: "world-event", id: we.id, text: we.event };
-      const ff = rollFunFact(usedFFIds);
-      if (ff) return { type: "fun-fact", id: ff.id, text: ff.text };
-    } else {
-      const ff = rollFunFact(usedFFIds);
-      if (ff) return { type: "fun-fact", id: ff.id, text: ff.text };
-      const we = rollWorldEvent(usedWEIds);
-      if (we) return { type: "world-event", id: we.id, text: we.event };
+  const roll = Math.random() * 100;
+  // 30% nothing, 35% fun fact, 30% world event, 5% special world event
+  // Normalize when some types are disabled
+  const slots: { type: string; weight: number }[] = [];
+  slots.push({ type: "nothing", weight: 30 });
+  if (ffEnabled) slots.push({ type: "fun-fact", weight: 35 });
+  if (weEnabled) slots.push({ type: "world-event", weight: 30 });
+  if (sweEnabled) slots.push({ type: "special-world-event", weight: 5 });
+
+  const totalWeight = slots.reduce((s, sl) => s + sl.weight, 0);
+  let cumulative = 0;
+  let chosen = "nothing";
+  const normalizedRoll = roll / 100 * totalWeight;
+  for (const slot of slots) {
+    cumulative += slot.weight;
+    if (normalizedRoll < cumulative) {
+      chosen = slot.type;
+      break;
     }
+  }
+
+  if (chosen === "nothing") return null;
+
+  if (chosen === "special-world-event") {
+    const swe = rollSpecialWorldEvent(usedSWEIds);
+    if (swe) return { type: "special-world-event", ...swe };
+    // fallback to world event
+    chosen = "world-event";
+  }
+
+  if (chosen === "world-event") {
+    const we = rollWorldEvent(usedWEIds);
+    if (we) return { type: "world-event", id: we.id, text: we.event };
+    const ff = rollFunFact(usedFFIds);
+    if (ff) return { type: "fun-fact", id: ff.id, text: ff.text };
     return null;
   }
 
-  if (weEnabled) {
-    if (Math.random() < 0.5) {
-      const we = rollWorldEvent(usedWEIds);
-      if (we) return { type: "world-event", id: we.id, text: we.event };
-    }
-    return null;
-  }
-
-  if (ffEnabled) {
-    if (Math.random() < 0.5) {
-      const ff = rollFunFact(usedFFIds);
-      if (ff) return { type: "fun-fact", id: ff.id, text: ff.text };
-    }
+  if (chosen === "fun-fact") {
+    const ff = rollFunFact(usedFFIds);
+    if (ff) return { type: "fun-fact", id: ff.id, text: ff.text };
+    const we = rollWorldEvent(usedWEIds);
+    if (we) return { type: "world-event", id: we.id, text: we.event };
     return null;
   }
 
@@ -227,10 +260,12 @@ export async function addScore(playerId: string, points: number) {
 }
 
 export async function markContentUsed(gameId: string, contentType: string, contentId: string) {
-  await getSupabase().from("used_content").upsert(
+  const { error } = await getSupabase().from("used_content").insert(
     { game_id: gameId, content_type: contentType, content_id: contentId },
-    { onConflict: "game_id,content_type,content_id" },
   );
+  if (error && !error.message.includes("duplicate key")) {
+    console.error("markContentUsed error:", error.message);
+  }
 }
 
 export async function getUsedContent(gameId: string, contentType: string): Promise<string[]> {

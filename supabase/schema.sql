@@ -92,7 +92,8 @@ create table if not exists public.votes (
   voter_id    uuid        not null references public.players (id) on delete cascade,
   round_id    text        not null,
   vote        boolean     not null,
-  created_at  timestamptz not null default now()
+  created_at  timestamptz not null default now(),
+  unique (game_id, voter_id, round_id)
 );
 
 alter table public.votes enable row level security;

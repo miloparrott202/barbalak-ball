@@ -20,8 +20,8 @@ const TYPE_OPTIONS = ["PENALTY", "REWARD"];
 
 const RARITY_SEGMENTS = [
   { label: "Common", weight: 50, color: "#a1a1aa" },
-  { label: "Uncommon", weight: 30, color: "#22c55e" },
-  { label: "Rare", weight: 25, color: "#a855f7" },
+  { label: "Uncommon", weight: 35, color: "#22c55e" },
+  { label: "Rare", weight: 20, color: "#a855f7" },
   { label: "Legendary", weight: 5, color: "#f59e0b" },
 ];
 
@@ -113,9 +113,22 @@ function PlayerSlotReel({ players, finalPlayer, onDone }: {
   );
 }
 
+const RARITY_GLOW: Record<string, string> = {
+  common: "rgba(161,161,170,0.3)",
+  uncommon: "rgba(34,197,94,0.4)",
+  rare: "rgba(168,85,247,0.5)",
+  legendary: "rgba(245,158,11,0.6)",
+};
+
 function RarityWheel({ finalValue, onDone }: { finalValue: string; onDone: () => void }) {
   const [rotation, setRotation] = useState(0);
   const [done, setDone] = useState(false);
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
+
+  const isLegendary = finalValue === "legendary";
+  const isRare = finalValue === "rare";
+  const isUncommon = finalValue === "uncommon";
 
   useEffect(() => {
     const totalWeight = RARITY_SEGMENTS.reduce((s, seg) => s + seg.weight, 0);
@@ -128,15 +141,22 @@ function RarityWheel({ finalValue, onDone }: { finalValue: string; onDone: () =>
     }
     const segDeg = (RARITY_SEGMENTS[targetIdx].weight / totalWeight) * 360;
     const targetDeg = cumulativeDeg + segDeg / 2;
-    const finalRot = 360 * 7 + ((270 - targetDeg + 360) % 360);
-    setRotation(finalRot);
+    const spins = isLegendary ? 12 : isRare ? 10 : 7;
+    const dur = isLegendary ? 5000 : isRare ? 3800 : 2800;
+    const finalRot = 360 * spins + ((270 - targetDeg + 360) % 360);
+
+    requestAnimationFrame(() => setRotation(finalRot));
 
     const timer = setTimeout(() => {
       setDone(true);
-      setTimeout(onDone, 400);
-    }, 2800);
+      const revealDelay = isLegendary ? 1200 : isRare ? 800 : 400;
+      setTimeout(() => onDoneRef.current(), revealDelay);
+    }, dur);
     return () => clearTimeout(timer);
-  }, [finalValue, onDone]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finalValue]);
+
+  const spinDuration = isLegendary ? "5s" : isRare ? "3.5s" : "2.5s";
 
   const totalWeight = RARITY_SEGMENTS.reduce((s, seg) => s + seg.weight, 0);
   let startAngle = 0;
@@ -144,41 +164,58 @@ function RarityWheel({ finalValue, onDone }: { finalValue: string; onDone: () =>
     const angle = (seg.weight / totalWeight) * 360;
     const endAngle = startAngle + angle;
     const largeArc = angle > 180 ? 1 : 0;
-    const r = 90;
-    const cx = 100, cy = 100;
+    const r = 120;
+    const cx = 140, cy = 140;
     const x1 = cx + r * Math.cos((Math.PI / 180) * startAngle);
     const y1 = cy + r * Math.sin((Math.PI / 180) * startAngle);
     const x2 = cx + r * Math.cos((Math.PI / 180) * endAngle);
     const y2 = cy + r * Math.sin((Math.PI / 180) * endAngle);
     const labelAngle = startAngle + angle / 2;
-    const lx = cx + 55 * Math.cos((Math.PI / 180) * labelAngle);
-    const ly = cy + 55 * Math.sin((Math.PI / 180) * labelAngle);
+    const lx = cx + 70 * Math.cos((Math.PI / 180) * labelAngle);
+    const ly = cy + 70 * Math.sin((Math.PI / 180) * labelAngle);
     const d = `M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc},1 ${x2},${y2} Z`;
     startAngle = endAngle;
     return { d, color: seg.color, label: seg.label, lx, ly, labelAngle };
   });
 
+  const glowColor = RARITY_GLOW[finalValue] ?? RARITY_GLOW.common;
+
   return (
-    <div className="relative w-52 h-52 mx-auto">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 z-10 text-yellow-400 text-2xl drop-shadow-lg">▼</div>
+    <div className="relative w-[75vw] max-w-[320px] aspect-square mx-auto">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-10 text-yellow-400 text-3xl drop-shadow-lg">▼</div>
+
+      {done && (
+        <div
+          className="absolute inset-[-20px] rounded-full pointer-events-none z-0"
+          style={{
+            background: `radial-gradient(circle, ${glowColor} 0%, transparent 70%)`,
+            animation: isLegendary
+              ? "rarityPulseGold 0.8s ease-in-out infinite alternate"
+              : isRare
+                ? "rarityPulsePurple 1s ease-in-out infinite alternate"
+                : "none",
+          }}
+        />
+      )}
+
       <svg
-        viewBox="0 0 200 200"
-        className="w-full h-full drop-shadow-xl"
+        viewBox="0 0 280 280"
+        className="w-full h-full drop-shadow-xl relative z-[1]"
         style={{
           transform: `rotate(${rotation}deg)`,
-          transition: "transform 2.5s cubic-bezier(0.17, 0.67, 0.12, 0.99)",
+          transition: rotation > 0 ? `transform ${spinDuration} cubic-bezier(0.17, 0.67, 0.12, 0.99)` : "none",
         }}
       >
         {paths.map((p) => (
           <g key={p.label}>
-            <path d={p.d} fill={p.color} stroke="#fbbf24" strokeWidth="2" />
+            <path d={p.d} fill={p.color} stroke="#fbbf24" strokeWidth="2.5" />
             <text
               x={p.lx}
               y={p.ly}
               textAnchor="middle"
               dominantBaseline="central"
               fill="white"
-              fontSize="9"
+              fontSize="12"
               fontWeight="bold"
               transform={`rotate(${p.labelAngle}, ${p.lx}, ${p.ly})`}
             >
@@ -186,20 +223,49 @@ function RarityWheel({ finalValue, onDone }: { finalValue: string; onDone: () =>
             </text>
           </g>
         ))}
-        <circle cx="100" cy="100" r="14" fill="#1e293b" stroke="#fbbf24" strokeWidth="2" />
+        <circle cx="140" cy="140" r="18" fill="#1e293b" stroke="#fbbf24" strokeWidth="2.5" />
+        <text x="140" y="140" textAnchor="middle" dominantBaseline="central" fill="#fbbf24" fontSize="8" fontWeight="bold">
+          FATE
+        </text>
       </svg>
+
       {done && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className={cn(
-            "text-lg font-black uppercase px-3 py-1 rounded-lg bg-white/90 shadow-lg",
-            finalValue === "legendary" ? "text-amber-600" :
-            finalValue === "rare" ? "text-purple-600" :
-            finalValue === "uncommon" ? "text-green-600" : "text-zinc-600",
-          )}>
+        <div className="absolute inset-0 flex items-center justify-center z-20">
+          <span
+            className={cn(
+              "text-xl font-black uppercase px-5 py-2 rounded-xl shadow-2xl border-2",
+              isLegendary
+                ? "bg-gradient-to-r from-amber-500 to-yellow-400 text-white border-amber-300"
+                : isRare
+                  ? "bg-gradient-to-r from-purple-600 to-violet-500 text-white border-purple-300"
+                  : isUncommon
+                    ? "bg-gradient-to-r from-green-500 to-emerald-400 text-white border-green-300"
+                    : "bg-white/95 text-zinc-700 border-zinc-300",
+            )}
+            style={isLegendary ? {
+              animation: "rarityShimmer 1.5s linear infinite",
+              backgroundSize: "200% 100%",
+            } : undefined}
+          >
             {finalValue}
           </span>
         </div>
       )}
+
+      <style jsx>{`
+        @keyframes rarityPulseGold {
+          from { opacity: 0.5; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1.08); }
+        }
+        @keyframes rarityPulsePurple {
+          from { opacity: 0.4; transform: scale(0.97); }
+          to { opacity: 0.9; transform: scale(1.05); }
+        }
+        @keyframes rarityShimmer {
+          from { background-position: -200% 0; }
+          to { background-position: 200% 0; }
+        }
+      `}</style>
     </div>
   );
 }
@@ -233,12 +299,15 @@ export function FiftyFifty({ round, players, currentPlayerId, isHost, onAdvance 
     if (rarity === "legendary") {
       setLegendaryFlash(true);
       setShaking(true);
-      setTimeout(() => setLegendaryFlash(false), 2000);
-      setTimeout(() => setShaking(false), 1500);
+      setTimeout(() => setLegendaryFlash(false), 2500);
+      setTimeout(() => setShaking(false), 2000);
+    } else if (rarity === "rare") {
+      setShaking(true);
+      setTimeout(() => setShaking(false), 800);
     }
     setTimeout(() => {
       onAdvance("result");
-    }, rarity === "legendary" ? 2500 : rarity === "rare" ? 1200 : 600);
+    }, rarity === "legendary" ? 3000 : rarity === "rare" ? 1800 : 600);
   }, [rarity, onAdvance]);
 
   useEffect(() => {
@@ -278,7 +347,15 @@ export function FiftyFifty({ round, players, currentPlayerId, isHost, onAdvance 
         shaking && "animate-shake",
       )}>
         {legendaryFlash && (
-          <div className="fixed inset-0 bg-amber-400/30 animate-pulse pointer-events-none z-50" />
+          <div className="fixed inset-0 pointer-events-none z-50" style={{
+            background: "radial-gradient(circle at center, rgba(245,158,11,0.4) 0%, rgba(245,158,11,0.15) 40%, transparent 70%)",
+            animation: "legendaryScreenPulse 0.6s ease-in-out infinite alternate",
+          }} />
+        )}
+        {rarity === "rare" && shaking && (
+          <div className="fixed inset-0 pointer-events-none z-50" style={{
+            background: "radial-gradient(circle at center, rgba(168,85,247,0.2) 0%, transparent 60%)",
+          }} />
         )}
 
         <div className="mb-8 w-full max-w-md">
@@ -328,7 +405,7 @@ export function FiftyFifty({ round, players, currentPlayerId, isHost, onAdvance 
           )}
 
           {revealStep >= 4 && (
-            <div className="mb-6">
+            <div className="mb-6 relative">
               <SelectedPlayer player={selectedPlayer} />
               <div className={cn(
                 "text-2xl font-black uppercase mb-2",
@@ -336,14 +413,33 @@ export function FiftyFifty({ round, players, currentPlayerId, isHost, onAdvance 
               )}>
                 {type === "reward" ? "REWARD" : "PENALTY"}
               </div>
-              <div className={cn(
-                "text-xl font-bold uppercase mb-4",
-                rarity === "legendary" ? "text-amber-500" :
-                rarity === "rare" ? "text-purple-500" :
-                rarity === "uncommon" ? "text-green-500" : "text-zinc-500",
-              )}>
+              <div
+                className={cn(
+                  "text-2xl font-black uppercase mb-4 inline-block px-5 py-1.5 rounded-lg",
+                  rarity === "legendary"
+                    ? "bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-white shadow-lg shadow-amber-300/50"
+                    : rarity === "rare"
+                      ? "bg-gradient-to-r from-purple-600 to-violet-500 text-white shadow-lg shadow-purple-300/40"
+                      : rarity === "uncommon"
+                        ? "bg-green-500 text-white"
+                        : "bg-zinc-200 text-zinc-600",
+                )}
+                style={rarity === "legendary" ? {
+                  animation: "legendaryBadgePulse 1s ease-in-out infinite alternate",
+                } : undefined}
+              >
                 {rarity.toUpperCase()}
               </div>
+              <style jsx>{`
+                @keyframes legendaryBadgePulse {
+                  from { transform: scale(1); box-shadow: 0 0 15px rgba(245,158,11,0.4); }
+                  to { transform: scale(1.05); box-shadow: 0 0 30px rgba(245,158,11,0.7); }
+                }
+                @keyframes legendaryScreenPulse {
+                  from { opacity: 0.4; }
+                  to { opacity: 1; }
+                }
+              `}</style>
             </div>
           )}
         </div>
