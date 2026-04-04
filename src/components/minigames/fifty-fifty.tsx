@@ -330,6 +330,14 @@ export function FiftyFifty({ round, players, currentPlayerId, isHost, onAdvance 
 
   const [showRulesPopup, setShowRulesPopup] = useState(false);
 
+  if (!selectedPlayer) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
+        <p className="text-zinc-400">Waiting for player...</p>
+      </div>
+    );
+  }
+
   if (phase === "staging") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
@@ -378,7 +386,7 @@ export function FiftyFifty({ round, players, currentPlayerId, isHost, onAdvance 
               <p className="text-xs text-zinc-400 mb-3 uppercase tracking-wider">Who&apos;s it gonna be?</p>
               <PlayerSlotReel
                 players={players}
-                finalPlayer={selectedPlayer!}
+                finalPlayer={selectedPlayer}
                 onDone={handlePlayerRevealed}
               />
             </div>

@@ -45,6 +45,7 @@ export default function JoinPage() {
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("ball-1.png");
   const [submitting, setSubmitting] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
   const [phrase1, setPhrase1] = useState("");
   const [phrase2, setPhrase2] = useState("");
   const [phrasesSubmitted, setPhrasesSubmitted] = useState(false);
@@ -127,9 +128,20 @@ export default function JoinPage() {
     }
   }, [allPlayers, myPlayer]);
 
+  const currentRound = game?.current_round;
+  useEffect(() => {
+    if (currentRound?.data?.collectingPhrases && !phrasesSubmitted && myPlayer) {
+      const submitted = (currentRound.data.submittedPlayers as string[] ?? []);
+      if (submitted.includes(myPlayer.id)) {
+        setPhrasesSubmitted(true);
+      }
+    }
+  }, [currentRound?.data?.collectingPhrases, currentRound?.data?.submittedPlayers, myPlayer, phrasesSubmitted]);
+
   async function handleJoin() {
     if (!name.trim() || !game) return;
     setSubmitting(true);
+    setJoinError(null);
     try {
       const { data, error } = await getSupabase()
         .from("players")
@@ -142,6 +154,7 @@ export default function JoinPage() {
       storePlayerId(shortCode, player.id);
     } catch (err) {
       console.error("Failed to join:", err);
+      setJoinError("Failed to join game. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -202,6 +215,9 @@ export default function JoinPage() {
             <Button className="w-full" size="lg" onClick={handleJoin} disabled={!name.trim() || submitting}>
               {submitting ? "Joining\u2026" : "Join Game"}
             </Button>
+            {joinError && (
+              <p className="text-sm text-red-500 text-center mt-2">{joinError}</p>
+            )}
           </CardContent>
         </Card>
       </main>
@@ -276,15 +292,6 @@ export default function JoinPage() {
   }
 
   const round = game.current_round;
-
-  useEffect(() => {
-    if (round?.data?.collectingPhrases && !phrasesSubmitted) {
-      const submitted = (round.data.submittedPlayers as string[] ?? []);
-      if (submitted.includes(myPlayer.id)) {
-        setPhrasesSubmitted(true);
-      }
-    }
-  }, [round?.data?.collectingPhrases, round?.data?.submittedPlayers, myPlayer.id, phrasesSubmitted]);
 
   if (round?.data?.collectingPhrases && !phrasesSubmitted) {
     const submitted = (round.data.submittedPlayers as string[] ?? []);

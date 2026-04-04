@@ -27,24 +27,29 @@ export function PointShop({ open, onClose, player, allPlayers, gameId }: PointSh
     const item = shopItems.find((i) => i.id === itemId);
     if (!item) return;
     setBusy(true);
-    const sb = getSupabase();
-    const { data: fresh } = await sb.from("players").select("score").eq("id", player.id).single();
-    const currentScore = fresh?.score ?? player.score;
-    if (currentScore < item.cost) { setBusy(false); return; }
-    await sb.from("purchases").insert({
-      game_id: gameId,
-      buyer_id: player.id,
-      target_id: targetId,
-      item_id: itemId,
-      cost: item.cost,
-    });
-    await sb
-      .from("players")
-      .update({ score: currentScore - item.cost })
-      .eq("id", player.id);
-    setBusy(false);
-    setSelecting(null);
-    onClose();
+    try {
+      const sb = getSupabase();
+      const { data: fresh } = await sb.from("players").select("score").eq("id", player.id).single();
+      const currentScore = fresh?.score ?? player.score;
+      if (currentScore < item.cost) return;
+      await sb.from("purchases").insert({
+        game_id: gameId,
+        buyer_id: player.id,
+        target_id: targetId,
+        item_id: itemId,
+        cost: item.cost,
+      });
+      await sb
+        .from("players")
+        .update({ score: currentScore - item.cost })
+        .eq("id", player.id);
+      setSelecting(null);
+      onClose();
+    } catch (err) {
+      console.error("Purchase failed:", err);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (

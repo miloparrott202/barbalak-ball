@@ -11,6 +11,7 @@ const LOGO_BALLS = Array.from({ length: 10 }, (_, i) => `/logo-balls/ball-${i + 
 export default function LandingPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [createError, setCreateError] = useState(false);
   const [ballIdx, setBallIdx] = useState(0);
 
   useEffect(() => {
@@ -22,6 +23,7 @@ export default function LandingPage() {
 
   async function handleHost() {
     setLoading(true);
+    setCreateError(false);
     try {
       const shortCode = generateShortCode();
       const { error } = await getSupabase()
@@ -32,6 +34,7 @@ export default function LandingPage() {
       router.push(`/host/${shortCode}`);
     } catch (err) {
       console.error("Failed to create game:", err);
+      setCreateError(true);
       setLoading(false);
     }
   }
@@ -55,6 +58,9 @@ export default function LandingPage() {
         <Button size="lg" onClick={handleHost} disabled={loading}>
           {loading ? "Creating game\u2026" : "Host Barbalak-Ball"}
         </Button>
+        {createError && (
+          <p className="text-sm text-red-500">Failed to create game. Please try again.</p>
+        )}
       </div>
     </main>
   );
