@@ -220,23 +220,28 @@ export function rollInterRoundEvent(
   if (chosen === "special-world-event") {
     const swe = rollSpecialWorldEvent(usedSWEIds);
     if (swe) return { type: "special-world-event", ...swe };
-    // fallback to world event
-    chosen = "world-event";
+    chosen = weEnabled ? "world-event" : ffEnabled ? "fun-fact" : "nothing";
   }
+
+  if (chosen === "nothing") return null;
 
   if (chosen === "world-event") {
     const we = rollWorldEvent(usedWEIds);
     if (we) return { type: "world-event", id: we.id, text: we.event };
-    const ff = rollFunFact(usedFFIds);
-    if (ff) return { type: "fun-fact", id: ff.id, text: ff.text };
+    if (ffEnabled) {
+      const ff = rollFunFact(usedFFIds);
+      if (ff) return { type: "fun-fact", id: ff.id, text: ff.text };
+    }
     return null;
   }
 
   if (chosen === "fun-fact") {
     const ff = rollFunFact(usedFFIds);
     if (ff) return { type: "fun-fact", id: ff.id, text: ff.text };
-    const we = rollWorldEvent(usedWEIds);
-    if (we) return { type: "world-event", id: we.id, text: we.event };
+    if (weEnabled) {
+      const we = rollWorldEvent(usedWEIds);
+      if (we) return { type: "world-event", id: we.id, text: we.event };
+    }
     return null;
   }
 

@@ -43,16 +43,18 @@ function SlotReel({ items, finalValue, duration, onDone, className }: {
       setDisplay(items[idx]);
     }, 80);
 
+    let innerTimer: ReturnType<typeof setTimeout>;
     const timer = setTimeout(() => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       setDisplay(finalValue);
       setSpinning(false);
-      setTimeout(onDone, 500);
+      innerTimer = setTimeout(onDone, 500);
     }, duration);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       clearTimeout(timer);
+      clearTimeout(innerTimer);
     };
   }, [items, finalValue, duration, onDone]);
 
@@ -83,16 +85,18 @@ function PlayerSlotReel({ players, finalPlayer, onDone }: {
       setDisplay(players[idx]);
     }, 120);
 
+    let innerTimer: ReturnType<typeof setTimeout>;
     const timer = setTimeout(() => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       setDisplay(finalPlayer);
       setSpinning(false);
-      setTimeout(onDone, 600);
+      innerTimer = setTimeout(onDone, 600);
     }, 3000);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       clearTimeout(timer);
+      clearTimeout(innerTimer);
     };
   }, [players, finalPlayer, onDone]);
 
@@ -147,12 +151,13 @@ function RarityWheel({ finalValue, onDone }: { finalValue: string; onDone: () =>
 
     requestAnimationFrame(() => setRotation(finalRot));
 
+    let innerTimer: ReturnType<typeof setTimeout>;
     const timer = setTimeout(() => {
       setDone(true);
       const revealDelay = isLegendary ? 1200 : isRare ? 800 : 400;
-      setTimeout(() => onDoneRef.current(), revealDelay);
+      innerTimer = setTimeout(() => onDoneRef.current(), revealDelay);
     }, dur);
-    return () => clearTimeout(timer);
+    return () => { clearTimeout(timer); clearTimeout(innerTimer); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finalValue]);
 
@@ -281,6 +286,11 @@ export function FiftyFifty({ round, players, currentPlayerId, isHost, onAdvance 
   const [revealStep, setRevealStep] = useState(0);
   const [legendaryFlash, setLegendaryFlash] = useState(false);
   const [shaking, setShaking] = useState(false);
+  const revealTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => {
+    return () => { revealTimersRef.current.forEach(clearTimeout); };
+  }, []);
 
   const handleFlip = useCallback(() => {
     onAdvance("active");
@@ -295,19 +305,21 @@ export function FiftyFifty({ round, players, currentPlayerId, isHost, onAdvance 
   }, []);
 
   const handleRarityRevealed = useCallback(() => {
+    revealTimersRef.current.forEach(clearTimeout);
+    revealTimersRef.current = [];
     setRevealStep(4);
     if (rarity === "legendary") {
       setLegendaryFlash(true);
       setShaking(true);
-      setTimeout(() => setLegendaryFlash(false), 2500);
-      setTimeout(() => setShaking(false), 2000);
+      revealTimersRef.current.push(setTimeout(() => setLegendaryFlash(false), 2500));
+      revealTimersRef.current.push(setTimeout(() => setShaking(false), 2000));
     } else if (rarity === "rare") {
       setShaking(true);
-      setTimeout(() => setShaking(false), 800);
+      revealTimersRef.current.push(setTimeout(() => setShaking(false), 800));
     }
-    setTimeout(() => {
+    revealTimersRef.current.push(setTimeout(() => {
       onAdvance("result");
-    }, rarity === "legendary" ? 3000 : rarity === "rare" ? 1800 : 600);
+    }, rarity === "legendary" ? 3000 : rarity === "rare" ? 1800 : 600));
   }, [rarity, onAdvance]);
 
   useEffect(() => {

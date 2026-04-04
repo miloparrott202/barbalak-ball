@@ -24,7 +24,7 @@ import type { Game, Player, CurrentRound, TriviaQuestion } from "@/lib/types";
 import { Pause, Play, SkipForward, UserX, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Hud, BullshitOverlay } from "@/components/hud";
+import { Hud } from "@/components/hud";
 import { Scoreboard } from "@/components/scoreboard";
 import { Transition } from "@/components/transition";
 import { FloatingBalls } from "@/components/floating-balls";
@@ -185,73 +185,100 @@ export default function HostPlayPage() {
     await updateGameRound(g.id, round);
   }, []);
 
-  const startNextRound = useCallback(async () => {
+  const continueAfterPurchases = useCallback(async () => {
     const g = gameRef.current;
     if (!g) return;
     setRoundBusy(true);
+    try {
+      const enabledIds = g.enabled_categories ?? [];
+      const usedWE = await getUsedContent(g.id, "world-event");
+      const usedFF = await getUsedContent(g.id, "fun-fact");
+      const usedSWE = await getUsedContent(g.id, "special-world-event");
+      const event = rollInterRoundEvent(enabledIds, usedWE, usedFF, usedSWE);
 
-    const executed = await executePendingPurchases(g.id);
-    if (executed.length > 0) {
-      const pl = playersRef.current;
-      const msgs = executed.map((e) => {
-        const buyer = pl.find((p) => p.id === e.buyer);
-        const item = shopItems.find((i) => i.id === e.item);
-        const target = e.target ? pl.find((p) => p.id === e.target) : null;
-        return target
-          ? `${buyer?.name ?? "?"} used ${item?.name ?? "?"} on ${target.name}`
-          : `${buyer?.name ?? "?"} used ${item?.name ?? "?"}`;
-      });
-      showNotification(msgs.join(" / "));
-    }
+      if (event) {
+        await markContentUsed(g.id, event.type, event.id);
 
-    const enabledIds = g.enabled_categories ?? [];
-    const usedWE = await getUsedContent(g.id, "world-event");
-    const usedFF = await getUsedContent(g.id, "fun-fact");
-    const usedSWE = await getUsedContent(g.id, "special-world-event");
-    const event = rollInterRoundEvent(enabledIds, usedWE, usedFF, usedSWE);
+        if (event.type === "special-world-event") {
+          const pl = playersRef.current;
+          if (pl.length === 0) { await startMinigame(); return; }
+          const targetPlayer = pl[Math.floor(Math.random() * pl.length)];
+          await updateGameRound(g.id, {
+            minigame: g.current_round?.minigame ?? "charades",
+            phase: "event",
+            selectedPlayerIds: [],
+            data: {
+              eventType: "special-world-event",
+              eventId: event.id,
+              sweTitle: event.title,
+              sweDescription: event.description,
+              sweTargetImage: event.targetImage,
+              sweTargetPlayerId: targetPlayer.id,
+            },
+            startedAt: new Date().toISOString(),
+          });
+          return;
+        }
 
-    if (event) {
-      await markContentUsed(g.id, event.type, event.id);
-
-      if (event.type === "special-world-event") {
-        const pl = playersRef.current;
-        const targetPlayer = pl[Math.floor(Math.random() * pl.length)];
         await updateGameRound(g.id, {
           minigame: g.current_round?.minigame ?? "charades",
           phase: "event",
           selectedPlayerIds: [],
           data: {
-            eventType: "special-world-event",
+            eventType: event.type,
+            eventText: event.type === "world-event" || event.type === "fun-fact" ? event.text : "",
             eventId: event.id,
-            sweTitle: event.title,
-            sweDescription: event.description,
-            sweTargetImage: event.targetImage,
-            sweTargetPlayerId: targetPlayer.id,
           },
           startedAt: new Date().toISOString(),
         });
-        setRoundBusy(false);
         return;
       }
 
-      await updateGameRound(g.id, {
-        minigame: g.current_round?.minigame ?? "charades",
-        phase: "event",
-        selectedPlayerIds: [],
-        data: {
-          eventType: event.type,
-          eventText: event.type === "world-event" || event.type === "fun-fact" ? event.text : "",
-          eventId: event.id,
-        },
-        startedAt: new Date().toISOString(),
-      });
+      await startMinigame();
+    } catch (err) {
+      console.error("continueAfterPurchases error:", err);
+    } finally {
       setRoundBusy(false);
-      return;
     }
+  }, [startMinigame]);
 
-    await startMinigame();
-    setRoundBusy(false);
-  }, [showNotification, startMinigame]);
+  const startNextRound = useCallback(async () => {
+    const g = gameRef.current;
+    if (!g) return;
+    setRoundBusy(true);
+    try {
+      const executed = await executePendingPurchases(g.id);
+      if (executed.length > 0) {
+        const pl = playersRef.current;
+        const displayItems = executed.map((e) => {
+          const buyer = pl.find((p) => p.id === e.buyer);
+          const item = shopItems.find((i) => i.id === e.item);
+          const target = e.target ? pl.find((p) => p.id === e.target) : null;
+          return {
+            buyerName: buyer?.name ?? "?",
+            itemName: item?.name ?? "?",
+            itemDescription: item?.description ?? "",
+            targetName: target?.name ?? null,
+          };
+        });
+
+        await updateGameRound(g.id, {
+          minigame: g.current_round?.minigame ?? "charades",
+          phase: "event",
+          selectedPlayerIds: [],
+          data: { eventType: "purchases", purchaseItems: displayItems },
+          startedAt: new Date().toISOString(),
+        });
+        return;
+      }
+
+      await continueAfterPurchases();
+    } catch (err) {
+      console.error("startNextRound error:", err);
+    } finally {
+      setRoundBusy(false);
+    }
+  }, [continueAfterPurchases]);
 
   const handleAdvance = useCallback(
     async (phase: string, extraData?: Record<string, unknown>) => {
@@ -356,21 +383,13 @@ export default function HostPlayPage() {
     setCorrectPtsAmount("");
   }, [correctPtsPlayer, correctPtsAmount, showNotification]);
 
-  const handleDismissBullshit = useCallback(async () => {
-    const g = gameRef.current;
-    if (!g?.current_round) return;
-    const newData = { ...g.current_round.data };
-    delete newData.bullshitActive;
-    delete newData.bullshitCaller;
-    delete newData.bullshitCallerName;
-    newData.paused = false;
-    setPaused(false);
-    await updateGameRound(g.id, { ...g.current_round, data: newData });
-  }, []);
-
   const handleTransitionDone = useCallback(() => {
     handleAdvance("staging");
   }, [handleAdvance]);
+
+  const handlePurchaseDismiss = useCallback(async () => {
+    await continueAfterPurchases();
+  }, [continueAfterPurchases]);
 
   const handleEventDismiss = useCallback(async () => {
     await startMinigame();
@@ -421,8 +440,6 @@ export default function HostPlayPage() {
 
   const enabledIds = game.enabled_categories ?? [];
   const devMode = enabledIds.includes("dev-mode");
-  const bullshitEnabled = enabledIds.includes("bullshit");
-  const bullshitActive = game.current_round?.data?.bullshitActive as boolean;
 
   if (collectingPhrases) {
     const submittedCount = (game.current_round?.data?.submittedPlayers as string[] ?? []).length;
@@ -488,11 +505,58 @@ export default function HostPlayPage() {
   const letEmFly = enabledIds.includes("let-em-fly");
   const round = game.current_round;
 
+  const nonHostPlayers = players.filter((p) => !p.is_host);
+
+  const devControlsJsx = devMode ? (
+    <div className="fixed top-12 right-3 z-50 flex items-center gap-2">
+      <button onClick={handlePauseToggle} className="flex items-center gap-1 rounded-lg bg-zinc-800 text-white px-3 py-1.5 text-xs font-medium hover:bg-zinc-700 transition-colors">
+        {paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+        {paused ? "Resume" : "Pause"}
+      </button>
+      <button onClick={handleSkip} className="flex items-center gap-1 rounded-lg bg-zinc-600 text-white px-3 py-1.5 text-xs font-medium hover:bg-zinc-500 transition-colors">
+        <SkipForward className="h-3.5 w-3.5" />
+        Skip
+      </button>
+      <div className="relative">
+        <button onClick={() => setKickMenuOpen(!kickMenuOpen)} className="flex items-center gap-1 rounded-lg bg-red-700 text-white px-3 py-1.5 text-xs font-medium hover:bg-red-600 transition-colors">
+          <UserX className="h-3.5 w-3.5" />
+          Kick
+        </button>
+        {kickMenuOpen && nonHostPlayers.length > 0 && (
+          <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-xl border border-zinc-200 overflow-hidden z-50">
+            {nonHostPlayers.map((p) => (
+              <button key={p.id} onClick={() => handleKickPlayer(p.id)} className="w-full text-left px-3 py-2 text-sm text-zinc-700 hover:bg-red-50 hover:text-red-700 transition-colors">
+                {p.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="relative">
+        <button onClick={() => setCorrectPtsOpen(!correctPtsOpen)} className="flex items-center gap-1 rounded-lg bg-amber-600 text-white px-3 py-1.5 text-xs font-medium hover:bg-amber-500 transition-colors">
+          <Wrench className="h-3.5 w-3.5" />
+          Pts
+        </button>
+        {correctPtsOpen && (
+          <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-lg shadow-xl border border-zinc-200 p-3 z-50">
+            <select className="w-full mb-2 rounded border border-zinc-200 px-2 py-1.5 text-sm" value={correctPtsPlayer} onChange={(e) => setCorrectPtsPlayer(e.target.value)}>
+              <option value="">Select player</option>
+              {players.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
+            </select>
+            <Input type="number" placeholder="Points (+/-)" value={correctPtsAmount} onChange={(e) => setCorrectPtsAmount(e.target.value)} className="mb-2" />
+            <Button size="sm" className="w-full" onClick={handleCorrectPoints}>Apply</Button>
+          </div>
+        )}
+      </div>
+    </div>
+  ) : null;
+
   if (!round || round.phase === "scoreboard") {
     return (
       <main className="flex flex-1 flex-col items-center justify-center px-4 pt-14">
-        {hostPlayer && <Hud player={hostPlayer} allPlayers={players} gameId={game.id} bullshitEnabled={bullshitEnabled} game={game} />}
+        {hostPlayer && <Hud player={hostPlayer} allPlayers={players} gameId={game.id} />}
         {letEmFly && <FloatingBalls />}
+        {devControlsJsx}
         {notification && (
           <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 rounded-lg bg-zinc-900 text-white px-4 py-2 text-sm font-medium shadow-lg animate-fade-in">
             {notification}
@@ -512,6 +576,32 @@ export default function HostPlayPage() {
 
   if (round.phase === "event") {
     const eventType = round.data.eventType as string;
+    if (eventType === "purchases") {
+      const items = (round.data.purchaseItems ?? []) as { buyerName: string; itemName: string; itemDescription: string; targetName: string | null }[];
+      return (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-amber-900/90 via-black/80 to-amber-900/90 px-6">
+          <p className="text-xs tracking-widest uppercase text-amber-300 mb-4 animate-pulse">Shop Items Activated</p>
+          <div className="space-y-4 w-full max-w-sm">
+            {items.map((item, i) => (
+              <div key={i} className="rounded-2xl border-2 border-amber-400/60 bg-amber-950/60 backdrop-blur px-6 py-5 text-center shadow-[0_0_30px_rgba(251,191,36,0.2)]">
+                <p className="text-lg font-black text-amber-300">{item.itemName}</p>
+                <p className="text-sm text-amber-100/80 mt-1">{item.itemDescription}</p>
+                <p className="text-sm text-white mt-3">
+                  <span className="font-bold">{item.buyerName}</span>
+                  {item.targetName ? <> used on <span className="font-bold">{item.targetName}</span></> : " activated this"}
+                </p>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={handlePurchaseDismiss}
+            className="mt-8 rounded-lg bg-amber-500 px-8 py-3 text-black font-bold hover:bg-amber-400 transition-colors"
+          >
+            Continue
+          </button>
+        </div>
+      );
+    }
     if (eventType === "special-world-event") {
       return (
         <SpecialWorldEventCard
@@ -549,8 +639,6 @@ export default function HostPlayPage() {
     onAdvance: handleAdvance,
   };
 
-  const showHostControls = devMode && ["staging", "active", "result"].includes(round.phase);
-
   const showContinue = (() => {
     if (round.minigame === "scategories") {
       return round.data.scatPhase === "result";
@@ -558,96 +646,14 @@ export default function HostPlayPage() {
     return round.phase === "result";
   })();
 
-  const nonHostPlayers = players.filter((p) => !p.is_host);
-
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-4 relative pt-14">
-      {hostPlayer && <Hud player={hostPlayer} allPlayers={players} gameId={game.id} bullshitEnabled={bullshitEnabled} game={game} />}
+      {hostPlayer && <Hud player={hostPlayer} allPlayers={players} gameId={game.id} />}
       {letEmFly && <FloatingBalls />}
 
-      {bullshitActive && (
-        <BullshitOverlay
-          callerName={round.data.bullshitCallerName as string ?? "Someone"}
-          isHost
-          onDismiss={handleDismissBullshit}
-        />
-      )}
+      {devControlsJsx}
 
-      {showHostControls && (
-        <div className="fixed top-12 right-3 z-50 flex items-center gap-2">
-          <button
-            onClick={handlePauseToggle}
-            className="flex items-center gap-1 rounded-lg bg-zinc-800 text-white px-3 py-1.5 text-xs font-medium hover:bg-zinc-700 transition-colors"
-          >
-            {paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
-            {paused ? "Resume" : "Pause"}
-          </button>
-          <button
-            onClick={handleSkip}
-            className="flex items-center gap-1 rounded-lg bg-zinc-600 text-white px-3 py-1.5 text-xs font-medium hover:bg-zinc-500 transition-colors"
-          >
-            <SkipForward className="h-3.5 w-3.5" />
-            Skip
-          </button>
-          <div className="relative">
-            <button
-              onClick={() => setKickMenuOpen(!kickMenuOpen)}
-              className="flex items-center gap-1 rounded-lg bg-red-700 text-white px-3 py-1.5 text-xs font-medium hover:bg-red-600 transition-colors"
-            >
-              <UserX className="h-3.5 w-3.5" />
-              Kick
-            </button>
-            {kickMenuOpen && nonHostPlayers.length > 0 && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-xl border border-zinc-200 overflow-hidden z-50">
-                {nonHostPlayers.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => handleKickPlayer(p.id)}
-                    className="w-full text-left px-3 py-2 text-sm text-zinc-700 hover:bg-red-50 hover:text-red-700 transition-colors"
-                  >
-                    {p.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="relative">
-            <button
-              onClick={() => setCorrectPtsOpen(!correctPtsOpen)}
-              className="flex items-center gap-1 rounded-lg bg-amber-600 text-white px-3 py-1.5 text-xs font-medium hover:bg-amber-500 transition-colors"
-            >
-              <Wrench className="h-3.5 w-3.5" />
-              Pts
-            </button>
-            {correctPtsOpen && (
-              <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-lg shadow-xl border border-zinc-200 p-3 z-50">
-                <select
-                  className="w-full mb-2 rounded border border-zinc-200 px-2 py-1.5 text-sm"
-                  value={correctPtsPlayer}
-                  onChange={(e) => setCorrectPtsPlayer(e.target.value)}
-                >
-                  <option value="">Select player</option>
-                  {players.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-                <Input
-                  type="number"
-                  placeholder="Points (+/-)"
-                  value={correctPtsAmount}
-                  onChange={(e) => setCorrectPtsAmount(e.target.value)}
-                  className="mb-2"
-                />
-                <Button size="sm" className="w-full" onClick={handleCorrectPoints}>
-                  Apply
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {paused && !bullshitActive && (
+      {paused && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
           <h1 className="text-5xl font-black text-white tracking-widest">PAUSED</h1>
         </div>

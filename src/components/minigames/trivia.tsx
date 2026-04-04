@@ -26,11 +26,11 @@ const DIFFICULTY_IMAGES: Record<string, string> = {
   ruinous: "/images/ruinous-trivia.gif",
 };
 
-const DIFFICULTY_WHEEL_SEGMENTS = [
-  { label: "Easy", weight: 30, color: "#22c55e" },
-  { label: "Medium", weight: 30, color: "#f59e0b" },
-  { label: "Hard", weight: 30, color: "#ef4444" },
-  { label: "Ruinous", weight: 10, color: "#18181b" },
+const WHEEL_SEGMENTS = [
+  { label: "Easy", weight: 30, color: "#22c55e", glow: "#4ade80" },
+  { label: "Medium", weight: 30, color: "#f59e0b", glow: "#fbbf24" },
+  { label: "Hard", weight: 30, color: "#ef4444", glow: "#f87171" },
+  { label: "Ruinous", weight: 10, color: "#18181b", glow: "#a855f7" },
 ];
 
 function DifficultyWheel({
@@ -42,98 +42,154 @@ function DifficultyWheel({
 }) {
   const [rotation, setRotation] = useState(0);
   const [landed, setLanded] = useState(false);
+  const [glowPulse, setGlowPulse] = useState(false);
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
+  const initRef = useRef(false);
 
   useEffect(() => {
-    const segments = DIFFICULTY_WHEEL_SEGMENTS;
-    const totalWeight = segments.reduce((s, seg) => s + seg.weight, 0);
-    const targetIdx = segments.findIndex(
+    if (initRef.current) return;
+    initRef.current = true;
+
+    const totalWeight = WHEEL_SEGMENTS.reduce((s, seg) => s + seg.weight, 0);
+    const targetIdx = WHEEL_SEGMENTS.findIndex(
       (s) => s.label.toLowerCase() === targetDifficulty.toLowerCase(),
     );
     if (targetIdx < 0) return;
+
     let cumDeg = 0;
     for (let i = 0; i < targetIdx; i++) {
-      cumDeg += (segments[i].weight / totalWeight) * 360;
+      cumDeg += (WHEEL_SEGMENTS[i].weight / totalWeight) * 360;
     }
-    const segDeg = (segments[targetIdx].weight / totalWeight) * 360;
+    const segDeg = (WHEEL_SEGMENTS[targetIdx].weight / totalWeight) * 360;
     const targetDeg = cumDeg + segDeg / 2;
-    const finalRot = 360 * 8 + ((270 - targetDeg + 360) % 360);
+    const spins = targetDifficulty === "ruinous" ? 12 : 8;
+    const finalRot = 360 * spins + ((270 - targetDeg + 360) % 360);
+    const duration = targetDifficulty === "ruinous" ? 5500 : 4200;
 
-    requestAnimationFrame(() => {
-      setRotation(finalRot);
-    });
+    requestAnimationFrame(() => setRotation(finalRot));
+    const glowTimer = setTimeout(() => setGlowPulse(true), duration * 0.6);
 
+    let innerTimer: ReturnType<typeof setTimeout>;
     const timer = setTimeout(() => {
       setLanded(true);
-      setTimeout(() => onDoneRef.current(), 600);
-    }, 4200);
-    return () => clearTimeout(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+      innerTimer = setTimeout(() => onDoneRef.current(), 800);
+    }, duration);
+    return () => { clearTimeout(glowTimer); clearTimeout(timer); clearTimeout(innerTimer); };
   }, [targetDifficulty]);
 
-  const totalWeight = DIFFICULTY_WHEEL_SEGMENTS.reduce((s, seg) => s + seg.weight, 0);
+  const totalWeight = WHEEL_SEGMENTS.reduce((s, seg) => s + seg.weight, 0);
+  const landedSeg = WHEEL_SEGMENTS.find(
+    (s) => s.label.toLowerCase() === targetDifficulty.toLowerCase(),
+  );
+  const isRuinous = targetDifficulty === "ruinous";
+  const spinDuration = isRuinous ? "5.5s" : "4.2s";
+
   let startAngle = 0;
-  const paths = DIFFICULTY_WHEEL_SEGMENTS.map((seg) => {
+  const paths = WHEEL_SEGMENTS.map((seg) => {
     const angle = (seg.weight / totalWeight) * 360;
     const endAngle = startAngle + angle;
     const largeArc = angle > 180 ? 1 : 0;
-    const r = 130;
-    const cx = 150, cy = 150;
+    const r = 140;
+    const cx = 160, cy = 160;
     const x1 = cx + r * Math.cos((Math.PI / 180) * startAngle);
     const y1 = cy + r * Math.sin((Math.PI / 180) * startAngle);
     const x2 = cx + r * Math.cos((Math.PI / 180) * endAngle);
     const y2 = cy + r * Math.sin((Math.PI / 180) * endAngle);
     const labelAngle = startAngle + angle / 2;
-    const lx = cx + 80 * Math.cos((Math.PI / 180) * labelAngle);
-    const ly = cy + 80 * Math.sin((Math.PI / 180) * labelAngle);
+    const lx = cx + 90 * Math.cos((Math.PI / 180) * labelAngle);
+    const ly = cy + 90 * Math.sin((Math.PI / 180) * labelAngle);
     const d = `M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc},1 ${x2},${y2} Z`;
     startAngle = endAngle;
-    return { d, color: seg.color, label: seg.label, lx, ly, labelAngle };
+    return { d, color: seg.color, glow: seg.glow, label: seg.label, lx, ly, labelAngle };
   });
 
   return (
-    <div className="relative w-[80vw] max-w-[340px] aspect-square mx-auto my-4">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-10 text-yellow-400 text-3xl drop-shadow-lg">
-        ▼
+    <div className="relative w-[85vw] max-w-[380px] aspect-square mx-auto my-4">
+      <div
+        className="absolute inset-0 rounded-full blur-3xl opacity-40 transition-opacity duration-1000"
+        style={{
+          background: glowPulse
+            ? `radial-gradient(circle, ${landedSeg?.glow ?? "#fbbf24"} 0%, transparent 70%)`
+            : "radial-gradient(circle, rgba(251,191,36,0.3) 0%, transparent 70%)",
+        }}
+      />
+
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 z-20">
+        <div className="w-0 h-0 border-l-[14px] border-r-[14px] border-t-[22px] border-l-transparent border-r-transparent border-t-yellow-400 drop-shadow-lg" />
       </div>
+
       <svg
-        viewBox="0 0 300 300"
-        className="w-full h-full drop-shadow-xl"
+        viewBox="0 0 320 320"
+        className="w-full h-full drop-shadow-2xl"
         style={{
           transform: `rotate(${rotation}deg)`,
-          transition: rotation > 0 ? "transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)" : "none",
+          transition: rotation > 0 ? `transform ${spinDuration} cubic-bezier(0.15, 0.65, 0.08, 1)` : "none",
+          filter: glowPulse ? `drop-shadow(0 0 20px ${landedSeg?.glow ?? "#fbbf24"})` : "none",
         }}
       >
+        <defs>
+          <filter id="trivia-seg-glow">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+          <radialGradient id="trivia-center-grad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#fbbf24" />
+            <stop offset="100%" stopColor="#b45309" />
+          </radialGradient>
+        </defs>
+
+        <circle cx="160" cy="160" r="155" fill="none" stroke="#fbbf24" strokeWidth="3" opacity="0.6" />
+
         {paths.map((p) => (
           <g key={p.label}>
-            <path d={p.d} fill={p.color} stroke="#fbbf24" strokeWidth="2" />
+            <path d={p.d} fill={p.color} stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" />
             <text
-              x={p.lx}
-              y={p.ly}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fill="white"
-              fontSize="16"
-              fontWeight="bold"
+              x={p.lx} y={p.ly}
+              textAnchor="middle" dominantBaseline="central"
+              fill="white" fontSize="18" fontWeight="900"
+              style={{ textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}
               transform={`rotate(${p.labelAngle}, ${p.lx}, ${p.ly})`}
             >
               {p.label}
             </text>
           </g>
         ))}
-        <circle cx="150" cy="150" r="20" fill="#1e293b" stroke="#fbbf24" strokeWidth="2" />
+
+        <circle cx="160" cy="160" r="24" fill="url(#trivia-center-grad)" stroke="white" strokeWidth="2" />
+        <text x="160" y="160" textAnchor="middle" dominantBaseline="central" fill="white" fontSize="14" fontWeight="bold">?</text>
       </svg>
+
       {landed && (
-        <div className="absolute inset-0 flex items-center justify-center z-20">
-          <div className="bg-white/95 rounded-xl px-5 py-2 shadow-2xl border-2 border-yellow-400 text-center">
-            <p className="text-xl font-black text-zinc-900 capitalize">{targetDifficulty}</p>
+        <div className="absolute inset-0 flex items-center justify-center z-20 animate-in fade-in zoom-in duration-300">
+          <div
+            className="rounded-2xl px-8 py-4 shadow-2xl border-2 text-center"
+            style={{
+              background: isRuinous
+                ? "linear-gradient(135deg, #18181b, #581c87)"
+                : `linear-gradient(135deg, ${landedSeg?.color}, ${landedSeg?.glow})`,
+              borderColor: landedSeg?.glow ?? "#fbbf24",
+              boxShadow: `0 0 30px ${landedSeg?.glow ?? "#fbbf24"}80`,
+            }}
+          >
+            <p className="text-2xl font-black text-white capitalize tracking-wide" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.4)" }}>
+              {targetDifficulty}
+            </p>
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes triviaGlow {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 0.8; }
+        }
+      `}</style>
     </div>
   );
 }
+
+type TriviaSubPhase = "wheel" | "diffImage" | "question";
 
 export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdvance }: TriviaProps) {
   const { phase, data } = round;
@@ -151,20 +207,19 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
   const remoteCorrect = data[`q${currentQ}_correct`] as boolean | undefined;
   const remoteOption = data[`q${currentQ}_option`] as number | undefined;
 
+  const [subPhase, setSubPhase] = useState<TriviaSubPhase>("wheel");
   const [timer, setTimer] = useState(15);
   const [answered, setAnswered] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
   const [shuffledOptions, setShuffledOptions] = useState<{ text: string; originalIdx: number }[]>([]);
-  const [difficultyFlash, setDifficultyFlash] = useState(false);
-  const [ruinousFading, setRuinousFading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [roastMsg, setRoastMsg] = useState(false);
   const [resultScores, setResultScores] = useState<{ playerId: string; correct: boolean; roast: boolean }[]>(
     (data.resultScores as { playerId: string; correct: boolean; roast: boolean }[]) ?? [],
   );
-  const [showDifficultyWheel, setShowDifficultyWheel] = useState(false);
   const [showRulesPopup, setShowRulesPopup] = useState(false);
   const timerIntervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
+  const prevQRef = useRef(-1);
 
   useEffect(() => {
     if (remoteAnswer && !answered) {
@@ -175,40 +230,46 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
   }, [remoteAnswer, remoteCorrect, remoteOption, answered]);
 
   useEffect(() => {
-    if (!question) return;
+    if (!question || currentQ === prevQRef.current) return;
+    prevQRef.current = currentQ;
+
     const mapped = question.options.map((text, i) => ({ text, originalIdx: i }));
     setShuffledOptions(shuffleArray(mapped));
     setAnswered(false);
     setSelected(null);
     setTimer(15);
     setRoastMsg(false);
+    setSubPhase("wheel");
+  }, [currentQ, question]);
 
-    setShowDifficultyWheel(true);
-  }, [question]);
+  const handleWheelDone = useCallback(() => {
+    setSubPhase("diffImage");
+  }, []);
 
-  const handleDifficultyWheelDone = useCallback(() => {
-    if (!question) return;
-    setShowDifficultyWheel(false);
+  useEffect(() => {
+    if (subPhase !== "diffImage" || !question) return;
 
-    setDifficultyFlash(true);
     if (question.difficulty === "ruinous") {
-      setRuinousFading(true);
       try {
         const audio = new Audio("/audio/ruinous.mp3");
         audioRef.current = audio;
         audio.play().catch(() => {});
       } catch { /* noop */ }
-      setTimeout(() => setRuinousFading(false), 2000);
     }
-    const flashTimer = setTimeout(() => setDifficultyFlash(false), question.difficulty === "ruinous" ? 2000 : 1200);
+
+    const duration = question.difficulty === "ruinous" ? 2500 : 1500;
+    const t = setTimeout(() => {
+      setSubPhase("question");
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    }, duration);
     return () => {
-      clearTimeout(flashTimer);
+      clearTimeout(t);
       if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
     };
-  }, [question]);
+  }, [subPhase, question]);
 
   useEffect(() => {
-    if (phase !== "active" || showDifficultyWheel) return;
+    if (phase !== "active" || subPhase !== "question") return;
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     const interval = setInterval(() => {
       setTimer((t) => {
@@ -218,7 +279,7 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
     }, 1000);
     timerIntervalRef.current = interval;
     return () => clearInterval(interval);
-  }, [phase, currentQ, showDifficultyWheel]);
+  }, [phase, currentQ, subPhase]);
 
   useEffect(() => {
     if (answered && timerIntervalRef.current) {
@@ -282,15 +343,43 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
   }
 
   if (phase === "active" && question) {
-    if (showDifficultyWheel) {
+    if (subPhase === "wheel") {
       return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
           <p className="text-xs tracking-widest uppercase text-zinc-400 mb-2">Spinning for difficulty...</p>
           <SelectedPlayer player={selectedPlayer} label="Up Next" />
           <DifficultyWheel
+            key={`wheel-${currentQ}`}
             targetDifficulty={question.difficulty}
-            onDone={handleDifficultyWheelDone}
+            onDone={handleWheelDone}
           />
+        </div>
+      );
+    }
+
+    if (subPhase === "diffImage") {
+      const isRuinous = question.difficulty === "ruinous";
+      return (
+        <div className={cn(
+          "fixed inset-0 z-40 flex items-center justify-center",
+          isRuinous ? "bg-black" : "bg-white",
+        )}>
+          <div className="flex flex-col items-center animate-in fade-in zoom-in duration-300">
+            <img
+              src={DIFFICULTY_IMAGES[question.difficulty]}
+              alt={question.difficulty}
+              className="w-[80vw] h-[80vh] object-contain"
+            />
+            <p
+              className={cn(
+                "mt-4 text-3xl font-black uppercase tracking-widest",
+                isRuinous ? "text-purple-400" : question.difficulty === "hard" ? "text-red-500" : question.difficulty === "medium" ? "text-amber-500" : "text-emerald-500",
+              )}
+              style={{ textShadow: isRuinous ? "0 0 20px rgba(168,85,247,0.8)" : "none" }}
+            >
+              {question.difficulty}
+            </p>
+          </div>
         </div>
       );
     }
@@ -300,23 +389,6 @@ export function Trivia({ round, players, currentPlayerId, isHost, gameId, onAdva
 
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 relative">
-        {difficultyFlash && (
-          <div className={cn(
-            "fixed inset-0 z-40 flex items-center justify-center pointer-events-none",
-            question.difficulty === "ruinous" ? "" : "bg-black/20",
-          )}>
-            <img
-              src={DIFFICULTY_IMAGES[question.difficulty]}
-              alt={question.difficulty}
-              className={cn(
-                "max-w-[200px] max-h-[200px] object-contain",
-                question.difficulty === "ruinous" && ruinousFading && "transition-opacity duration-[2000ms] ease-linear",
-                question.difficulty === "ruinous" && !ruinousFading && "opacity-0",
-              )}
-            />
-          </div>
-        )}
-
         <div className="w-full max-w-lg">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs text-zinc-400">

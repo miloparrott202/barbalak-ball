@@ -21,19 +21,19 @@ interface ScategoriesProps {
 type ScatPhase = "staging" | "think" | "defend" | "wheel" | "result";
 
 const SUCCESS_WHEEL = [
-  { label: "Make someone else shotgun", weight: 10, points: 0, color: "#ef4444" },
-  { label: "+10 points", weight: 40, points: 10, color: "#22c55e" },
-  { label: "Hand out a handle pull", weight: 20, points: 0, color: "#f59e0b" },
-  { label: "Make someone else finish their drink", weight: 10, points: 0, color: "#8b5cf6" },
-  { label: "+15 points", weight: 20, points: 15, color: "#06b6d4" },
+  { label: "Give out shotgun", weight: 10, points: 0, color: "#dc2626", glow: "#f87171" },
+  { label: "+10 points", weight: 40, points: 10, color: "#16a34a", glow: "#4ade80" },
+  { label: "+15 points", weight: 20, points: 15, color: "#0891b2", glow: "#22d3ee" },
+  { label: "+25 points", weight: 5, points: 25, color: "#d97706", glow: "#fbbf24" },
+  { label: "+15 points!", weight: 20, points: 15, color: "#2563eb", glow: "#60a5fa" },
 ];
 
 const DEFEAT_WHEEL = [
-  { label: "Shotgun", weight: 10, points: 0, color: "#ef4444" },
-  { label: "-10 points", weight: 40, points: -10, color: "#64748b" },
-  { label: "Handle pull", weight: 20, points: 0, color: "#f59e0b" },
-  { label: "Finish their drink", weight: 10, points: 0, color: "#8b5cf6" },
-  { label: "-15 points", weight: 20, points: -15, color: "#1e293b" },
+  { label: "Shotgun", weight: 10, points: 0, color: "#dc2626", glow: "#f87171" },
+  { label: "-10 points", weight: 40, points: -10, color: "#475569", glow: "#94a3b8" },
+  { label: "-15 points", weight: 20, points: -15, color: "#d97706", glow: "#fbbf24" },
+  { label: "-25 points", weight: 10, points: -25, color: "#18181b", glow: "#a855f7" },
+  { label: "-15 points!", weight: 20, points: -15, color: "#7c3aed", glow: "#a78bfa" },
 ];
 
 function pickWeighted(items: typeof SUCCESS_WHEEL): (typeof SUCCESS_WHEEL)[number] {
@@ -49,18 +49,27 @@ function pickWeighted(items: typeof SUCCESS_WHEEL): (typeof SUCCESS_WHEEL)[numbe
 function WheelOfFate({
   segments,
   finalLabel,
+  isSuccess,
   onDone,
 }: {
   segments: typeof SUCCESS_WHEEL;
   finalLabel: string;
+  isSuccess: boolean;
   onDone: () => void;
 }) {
   const [rotation, setRotation] = useState(0);
   const [landed, setLanded] = useState(false);
+  const [glowActive, setGlowActive] = useState(false);
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
+  const initRef = useRef(false);
+
+  const landedSeg = segments.find((s) => s.label === finalLabel);
 
   useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
+
     const totalWeight = segments.reduce((s, seg) => s + seg.weight, 0);
     const targetIdx = segments.findIndex((s) => s.label === finalLabel);
     if (targetIdx < 0) return;
@@ -72,16 +81,15 @@ function WheelOfFate({
     const targetDeg = cumDeg + segDeg / 2;
     const finalRot = 360 * 10 + ((270 - targetDeg + 360) % 360);
 
-    requestAnimationFrame(() => {
-      setRotation(finalRot);
-    });
+    requestAnimationFrame(() => setRotation(finalRot));
+    const glowTimer = setTimeout(() => setGlowActive(true), 4500);
 
+    let innerTimer: ReturnType<typeof setTimeout>;
     const timer = setTimeout(() => {
       setLanded(true);
-      setTimeout(() => onDoneRef.current(), 800);
+      innerTimer = setTimeout(() => onDoneRef.current(), 1000);
     }, 7200);
-    return () => clearTimeout(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => { clearTimeout(glowTimer); clearTimeout(timer); clearTimeout(innerTimer); };
   }, [segments, finalLabel]);
 
   const totalWeight = segments.reduce((s, seg) => s + seg.weight, 0);
@@ -90,66 +98,97 @@ function WheelOfFate({
     const angle = (seg.weight / totalWeight) * 360;
     const endAngle = startAngle + angle;
     const largeArc = angle > 180 ? 1 : 0;
-    const r = 140;
+    const r = 145;
     const cx = 160, cy = 160;
     const x1 = cx + r * Math.cos((Math.PI / 180) * startAngle);
     const y1 = cy + r * Math.sin((Math.PI / 180) * startAngle);
     const x2 = cx + r * Math.cos((Math.PI / 180) * endAngle);
     const y2 = cy + r * Math.sin((Math.PI / 180) * endAngle);
     const labelAngle = startAngle + angle / 2;
-    const lx = cx + 85 * Math.cos((Math.PI / 180) * labelAngle);
-    const ly = cy + 85 * Math.sin((Math.PI / 180) * labelAngle);
+    const labelR = angle < 30 ? 100 : 95;
+    const lx = cx + labelR * Math.cos((Math.PI / 180) * labelAngle);
+    const ly = cy + labelR * Math.sin((Math.PI / 180) * labelAngle);
     const d = `M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc},1 ${x2},${y2} Z`;
     startAngle = endAngle;
-    return { d, color: seg.color, label: seg.label, lx, ly, labelAngle };
+    return { d, color: seg.color, glow: seg.glow, label: seg.label, lx, ly, labelAngle, angle };
   });
+
+  const accentColor = isSuccess ? "#22c55e" : "#ef4444";
+  const accentGlow = isSuccess ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)";
 
   return (
     <div className="relative w-[90vw] max-w-[400px] aspect-square mx-auto my-4">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-10 text-yellow-400 text-4xl drop-shadow-lg">
-        ▼
-      </div>
       <div
-        className="absolute inset-0 rounded-full"
+        className="absolute inset-[-20px] rounded-full transition-all duration-1000"
         style={{
-          background: "radial-gradient(circle, rgba(251,191,36,0.15) 0%, transparent 70%)",
-          boxShadow: "0 0 60px 20px rgba(251,191,36,0.15)",
+          background: glowActive
+            ? `radial-gradient(circle, ${landedSeg?.glow ?? accentColor}40 0%, transparent 70%)`
+            : `radial-gradient(circle, ${accentGlow} 0%, transparent 70%)`,
+          boxShadow: glowActive ? `0 0 80px 30px ${landedSeg?.glow ?? accentColor}30` : "none",
         }}
       />
+
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 z-20">
+        <div
+          className="w-0 h-0 border-l-[16px] border-r-[16px] border-t-[26px] border-l-transparent border-r-transparent drop-shadow-lg"
+          style={{ borderTopColor: accentColor }}
+        />
+      </div>
+
       <svg
         viewBox="0 0 320 320"
-        className="w-full h-full drop-shadow-xl"
+        className="w-full h-full"
         style={{
           transform: `rotate(${rotation}deg)`,
-          transition: rotation > 0 ? "transform 7s cubic-bezier(0.17, 0.67, 0.12, 0.99)" : "none",
+          transition: rotation > 0 ? "transform 7s cubic-bezier(0.15, 0.65, 0.08, 1)" : "none",
+          filter: glowActive ? `drop-shadow(0 0 25px ${landedSeg?.glow ?? accentColor}80)` : "drop-shadow(0 4px 20px rgba(0,0,0,0.3))",
         }}
       >
+        <defs>
+          <radialGradient id="wof-center" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor={isSuccess ? "#4ade80" : "#f87171"} />
+            <stop offset="100%" stopColor={isSuccess ? "#15803d" : "#991b1b"} />
+          </radialGradient>
+        </defs>
+
+        <circle cx="160" cy="160" r="155" fill="none" stroke={accentColor} strokeWidth="3" opacity="0.5" />
+        <circle cx="160" cy="160" r="150" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+
         {paths.map((p) => (
           <g key={p.label}>
-            <path d={p.d} fill={p.color} stroke="#fbbf24" strokeWidth="3" />
+            <path d={p.d} fill={p.color} stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" />
             <text
-              x={p.lx}
-              y={p.ly}
-              textAnchor="middle"
-              dominantBaseline="central"
+              x={p.lx} y={p.ly}
+              textAnchor="middle" dominantBaseline="central"
               fill="white"
-              fontSize="13"
-              fontWeight="bold"
+              fontSize={p.angle < 30 ? "11" : "14"}
+              fontWeight="900"
+              style={{ textShadow: "0 1px 4px rgba(0,0,0,0.7)" }}
               transform={`rotate(${p.labelAngle}, ${p.lx}, ${p.ly})`}
             >
-              {p.label.length > 20 ? p.label.slice(0, 18) + "…" : p.label}
+              {p.label}
             </text>
           </g>
         ))}
-        <circle cx="160" cy="160" r="22" fill="#1e293b" stroke="#fbbf24" strokeWidth="3" />
-        <text x="160" y="160" textAnchor="middle" dominantBaseline="central" fill="#fbbf24" fontSize="12" fontWeight="bold">
-          FATE
-        </text>
+
+        <circle cx="160" cy="160" r="26" fill="url(#wof-center)" stroke="white" strokeWidth="2.5" />
+        <text x="160" y="156" textAnchor="middle" dominantBaseline="central" fill="white" fontSize="9" fontWeight="bold">WHEEL</text>
+        <text x="160" y="167" textAnchor="middle" dominantBaseline="central" fill="white" fontSize="8" fontWeight="bold">OF FATE</text>
       </svg>
+
       {landed && (
-        <div className="absolute inset-0 flex items-center justify-center z-20">
-          <div className="bg-white/95 rounded-xl px-6 py-4 shadow-2xl border-2 border-yellow-400 max-w-[280px] text-center">
-            <p className="text-lg font-black text-zinc-900">{finalLabel}</p>
+        <div className="absolute inset-0 flex items-center justify-center z-20 animate-in fade-in zoom-in duration-300">
+          <div
+            className="rounded-2xl px-8 py-5 shadow-2xl border-2 max-w-[300px] text-center"
+            style={{
+              background: `linear-gradient(135deg, ${landedSeg?.color ?? "#333"}, ${landedSeg?.glow ?? "#666"})`,
+              borderColor: landedSeg?.glow ?? "#fbbf24",
+              boxShadow: `0 0 40px ${landedSeg?.glow ?? "#fbbf24"}60`,
+            }}
+          >
+            <p className="text-xl font-black text-white" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
+              {finalLabel}
+            </p>
           </div>
         </div>
       )}
@@ -446,6 +485,7 @@ export function Scategories({ round, players, currentPlayerId, isHost, gameId, o
         <WheelOfFate
           segments={segments}
           finalLabel={wheelOutcome}
+          isSuccess={accepted}
           onDone={() => {
             if (isHost) {
               onAdvance("active", {

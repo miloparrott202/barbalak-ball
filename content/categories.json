@@ -68,14 +68,6 @@
     "type": "event"
   },
   {
-    "id": "bullshit",
-    "label": "Bullshit",
-    "description": "",
-    "dataFile": "",
-    "enabled": false,
-    "type": "event"
-  },
-  {
     "id": "dev-mode",
     "label": "Dev Mode",
     "description": "",

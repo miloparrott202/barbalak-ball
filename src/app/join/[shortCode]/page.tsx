@@ -8,7 +8,7 @@ import { categories as allCategories, loadingScreenRules } from "@/lib/content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Hud, BullshitOverlay } from "@/components/hud";
+import { Hud } from "@/components/hud";
 import { Scoreboard } from "@/components/scoreboard";
 import { Transition } from "@/components/transition";
 import { Charades } from "@/components/minigames/charades";
@@ -277,11 +277,18 @@ export default function JoinPage() {
 
   const round = game.current_round;
 
+  useEffect(() => {
+    if (round?.data?.collectingPhrases && !phrasesSubmitted) {
+      const submitted = (round.data.submittedPlayers as string[] ?? []);
+      if (submitted.includes(myPlayer.id)) {
+        setPhrasesSubmitted(true);
+      }
+    }
+  }, [round?.data?.collectingPhrases, round?.data?.submittedPlayers, myPlayer.id, phrasesSubmitted]);
+
   if (round?.data?.collectingPhrases && !phrasesSubmitted) {
     const submitted = (round.data.submittedPlayers as string[] ?? []);
-    if (submitted.includes(myPlayer.id)) {
-      setPhrasesSubmitted(true);
-    } else {
+    if (!submitted.includes(myPlayer.id)) {
       return (
         <main className="flex flex-1 flex-col items-center justify-center px-4">
           <h2 className="text-2xl font-bold text-zinc-900 mb-2">Add Your Charades</h2>
@@ -323,21 +330,11 @@ export default function JoinPage() {
   }
 
   const letEmFly = (game.enabled_categories ?? []).includes("let-em-fly");
-  const bullshitEnabled = (game.enabled_categories ?? []).includes("bullshit");
-  const bullshitActive = round?.data?.bullshitActive as boolean;
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-4 pt-14">
       {letEmFly && <FloatingBalls />}
-      <Hud player={myPlayer} allPlayers={allPlayers} gameId={game.id} bullshitEnabled={bullshitEnabled} game={game} />
-
-      {bullshitActive && (
-        <BullshitOverlay
-          callerName={round?.data?.bullshitCallerName as string ?? "Someone"}
-          isHost={false}
-          onDismiss={() => {}}
-        />
-      )}
+      <Hud player={myPlayer} allPlayers={allPlayers} gameId={game.id} />
 
       {(!round || round.phase === "scoreboard") && (
         <div>
@@ -346,7 +343,26 @@ export default function JoinPage() {
         </div>
       )}
 
-      {round?.phase === "event" && (
+      {round?.phase === "event" && round.data.eventType === "purchases" && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-amber-900/90 via-black/80 to-amber-900/90 px-6">
+          <p className="text-xs tracking-widest uppercase text-amber-300 mb-4 animate-pulse">Shop Items Activated</p>
+          <div className="space-y-4 w-full max-w-sm">
+            {((round.data.purchaseItems ?? []) as { buyerName: string; itemName: string; itemDescription: string; targetName: string | null }[]).map((item, i) => (
+              <div key={i} className="rounded-2xl border-2 border-amber-400/60 bg-amber-950/60 backdrop-blur px-6 py-5 text-center shadow-[0_0_30px_rgba(251,191,36,0.2)]">
+                <p className="text-lg font-black text-amber-300">{item.itemName}</p>
+                <p className="text-sm text-amber-100/80 mt-1">{item.itemDescription}</p>
+                <p className="text-sm text-white mt-3">
+                  <span className="font-bold">{item.buyerName}</span>
+                  {item.targetName ? <> used on <span className="font-bold">{item.targetName}</span></> : " activated this"}
+                </p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-6 text-sm text-amber-300/60">Waiting for host to continue...</p>
+        </div>
+      )}
+
+      {round?.phase === "event" && round.data.eventType !== "purchases" && (
         round.data.eventType === "special-world-event" ? (
           <SpecialWorldEventCard
             title={round.data.sweTitle as string}

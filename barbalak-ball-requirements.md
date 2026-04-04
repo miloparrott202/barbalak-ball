@@ -1,6 +1,6 @@
 # Barbalak-Ball — Master Architectural & Functional Specification
 
-> **Version:** 6.5.0  
+> **Version:** 6.6.0  
 > **Status:** Canonical  
 > **Stack:** Next.js (App Router) · Supabase (Realtime + Postgres) · Vercel  
 > **Content Source:** All generated content lives in `content/*.json`. This document defines mechanics only.
@@ -147,18 +147,8 @@ No description popup auto-appears during transitions.
 ### 1.10.2 Dev Mode Toggle
 
 - "Dev Mode" is a toggleable setting in the settings page (listed under events).
-- When enabled: Pause, Skip, Kick, and Correct Points buttons appear on the host play screen.
+- When enabled: Pause, Skip, Kick, and Correct Points buttons appear on the host play screen **on ALL phases** including scoreboard, event, transition, staging, active, and result. The controls are extracted into a shared JSX block rendered in both the scoreboard branch and the main game branch.
 - When disabled: None of these host controls are visible. No player can access them.
-
-### 1.10.3 Bullshit Feature
-
-- "Bullshit" is a toggleable setting in the settings page (listed under events).
-- When enabled, a **"Call Bullshit"** button appears in the HUD bar between the player name (left) and points (right) on **every player's device** (host and joined).
-- When any player taps "Call Bullshit":
-  1. The game pauses immediately.
-  2. All devices display a full-screen overlay: **"[Player] has called bullshit."**
-  3. Next to this is an informational tooltip (tap to reveal): "[Player] has called bullshit. They will now make their case against the accused (google shit on their phone). If the defendant is found guilty, they must finish their drink. If the defendant is found innocent, vice versa. If they come to a stalemate, the room decides."
-  4. Only the **host** can dismiss the overlay and resume the game.
 
 ### 1.11 Floating Balls Background
 
@@ -231,8 +221,8 @@ Charades has two sub-switches on the settings page:
 - Each question is for ONE randomly selected player. The question appears on ALL screens, but only the selected player can answer.
 - All questions are **multiple choice (4 options)**. **15-second timer** per question.
 - **Difficulty distribution:** Easy 30%, Medium 30%, Hard 30%, Ruinous 10%.
-- **Difficulty reveal:** Before each question, a **spinning wheel** with four segments (Easy 30%, Medium 30%, Hard 30%, Ruinous 10%) spins for ~4 seconds and visually lands on the pre-determined difficulty. The wheel must align with the actual difficulty of the question.
-- **Difficulty visuals (after wheel):** Easy → flash `happy.png`. Medium → flash `medium.png`. Hard → flash `hard.png`. Ruinous → `ruinous-trivia.gif` pops up and fades linearly over 2 seconds while `ruinous.mp3` plays in full. All assets in `content/images/`.
+- **Difficulty reveal:** Before each question, a **flashy spinning wheel** with four gradient-colored segments (Easy 30%, Medium 30%, Hard 30%, Ruinous 10%) spins with glow effects and lands on the pre-determined difficulty. The wheel features a radial glow ring, golden accents, gradient center, and a landing badge with the difficulty's color scheme. Ruinous spins longer (5.5s, 12 rotations) than other difficulties (4.2s, 8 rotations). The wheel re-spin bug is prevented by keying the effect on `currentQ` index (not the `question` object reference).
+- **Difficulty image phase:** After the wheel lands, a **full-screen difficulty image** is shown as a distinct phase before the question appears. Easy → `happy.png`, Medium → `medium.png`, Hard → `hard.png`, Ruinous → `ruinous-trivia.gif` with `ruinous.mp3` audio. The image fills `80vw × 80vh` with the difficulty name below. Duration: 1.5s for normal difficulties, 2.5s for ruinous. This is a separate `triviaSubPhase` state ("wheel" → "diffImage" → "question"), NOT an overlay on the question.
 - **Timer stops on answer:** As soon as a player submits their answer (correct or incorrect), the timer immediately stops at 0.
 - **Answer sync:** When a joined player submits their answer, the result (correct/incorrect, selected option) is written to game state (`data.q{N}_answered`, `data.q{N}_correct`, `data.q{N}_option`). The host reads this from game state so both devices show the same result. This prevents the host showing "Time's up!" when the player actually answered on their device.
 - **Difficulty images** must be served from `public/images/` (e.g., `/images/happy.png`, `/images/medium.png`, `/images/hard.png`, `/images/ruinous-trivia.gif`). Source files are in `content/images/` and must be copied to `public/images/`.
@@ -265,15 +255,17 @@ Charades has two sub-switches on the settings page:
 
 After voting, "[Player name] must now spin the wheel of fate" appears. The wheel is flashy, Vegas-style, and sized at **90vw / max 400px** for clear readability on mobile. Text labels are **13px+** and segments use large radii. The wheel spins for approximately **7 seconds**. The wheel spins on all players' screens simultaneously — the host writes `scatPhase: "wheel"` to game state, and every client independently renders the same `WheelOfFate` component with the same target outcome. The `onDone` callback uses a **ref** (not a useEffect dependency) to prevent animation restarts from re-renders. The main `phase` stays as `"active"` during wheel and result sub-phases; only `data.scatPhase` changes. Scoring is guarded by a `scatScored` flag to prevent double-awarding.
 
+The wheel features a flashy design with color-coded segments, glow effects that intensify as the wheel decelerates, a gradient center hub labeled "WHEEL OF FATE", and a landing badge that slides in with the segment's color gradient. Success wheels use green accents; defeat wheels use red accents.
+
 **Success wheel (≥50% yes votes):**
 
 | Outcome | Weight |
 |---|---|
-| Make someone else shotgun | 10% |
+| Give out shotgun | 10% |
 | +10 points | 40% |
-| Hand out a handle pull | 20% |
-| Make someone else finish their drink | 10% |
 | +15 points | 20% |
+| +25 points | 5% |
+| +15 points! | 20% |
 
 **Defeat wheel (<50% yes votes):**
 
@@ -281,9 +273,9 @@ After voting, "[Player name] must now spin the wheel of fate" appears. The wheel
 |---|---|
 | Shotgun | 10% |
 | -10 points | 40% |
-| Handle pull | 20% |
-| Finish their drink | 10% |
 | -15 points | 20% |
+| -25 points | 10% |
+| -15 points! | 20% |
 
 ---
 
@@ -447,10 +439,12 @@ Items are defined in `content/shop-items.json`. Current items:
 
 "Social Sacrifice" has been removed.
 
-### 8.4 Visual
+### 8.4 Visual — Full-Screen Purchase Display
 
-- When a queued purchase resolves, a brief notification appears on all screens: **"[Player] used [Item Name] on [Target]!"** (or just the player name if no target).
-- The notification persists for 3 seconds.
+- When queued purchases resolve (at the start of a new round), they are written to `current_round.data` as `eventType: "purchases"` with `purchaseItems` array, and the round phase is set to `"event"`.
+- **All devices** show a full-screen overlay with each purchase displayed in a styled card: item name, description, buyer name, and target name (if applicable). The overlay uses an amber/gold theme.
+- Only the **host** sees a "Continue" button to dismiss the display and proceed to the inter-round event or next minigame.
+- **Joined players** see "Waiting for host to continue..." at the bottom.
 
 ---
 
